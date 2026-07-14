@@ -1,5 +1,15 @@
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthContext";
+import AppRoutes from "./routes";
+
 const App = () => {
-  return <h1 className="text-3xl font-bold text-blue-600">Hello world!</h1>;
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
+  );
 };
 
 export default App;

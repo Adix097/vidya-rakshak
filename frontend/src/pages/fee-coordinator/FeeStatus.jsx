@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CLASSES, STUDENTS } from "./mockData";
+import { CLASSES, STUDENTS } from "./temp";
 
 const STATUS_STYLES = {
   paid: "bg-green-50 border-green-300 text-green-700",
@@ -13,7 +13,7 @@ const STATUS_LABELS = {
   overdue: "Overdue",
 };
 
-export default function FeeStatus() {
+const FeeStatus = () => {
   const [selectedClass, setSelectedClass] = useState(CLASSES[0].id);
   const [students, setStudents] = useState(STUDENTS);
   const [saved, setSaved] = useState(false);
@@ -94,4 +94,6 @@ export default function FeeStatus() {
       )}
     </div>
   );
-}
+};
+
+export default FeeStatus;

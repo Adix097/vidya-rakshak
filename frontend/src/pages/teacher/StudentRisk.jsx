@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CLASSES, STUDENTS } from "./temp";
-import RiskBadge from "../../components/RiskBadge";
+import RiskBadge from "../../Components/RiskBadge";
 
 const StudentRisk = () => {
   const [selectedClass, setSelectedClass] = useState(CLASSES[0].id);
