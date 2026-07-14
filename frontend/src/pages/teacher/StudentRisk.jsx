@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CLASSES, STUDENTS } from "./mockData";
+import { CLASSES, STUDENTS } from "./temp";
 import RiskBadge from "../../components/RiskBadge";
 
 const StudentRisk = () => {

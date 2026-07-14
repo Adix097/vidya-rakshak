@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CLASSES, STUDENTS } from "./mockData";
+import { CLASSES, STUDENTS } from "./temp";
 
 const Marks = () => {
   const [selectedClass, setSelectedClass] = useState(CLASSES[0].id);
