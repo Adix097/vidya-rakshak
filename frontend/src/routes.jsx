@@ -8,6 +8,7 @@ import Attendance from "./pages/teacher/Attendance";
 import Marks from "./pages/teacher/Marks";
 import StudentRisk from "./pages/teacher/StudentRisk";
 import FeeStatus from "./pages/fee-coordinator/FeeStatus";
+import Layout from "./Components/layout/Layout";
 
 export default function AppRoutes() {
   return (
@@ -18,7 +19,9 @@ export default function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute allowedRoles={["school-admin"]}>
-            <Overview />
+            <Layout>
+              <Overview />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -26,7 +29,9 @@ export default function AppRoutes() {
         path="/accounts"
         element={
           <ProtectedRoute allowedRoles={["school-admin"]}>
-            <ManageAccounts />
+            <Layout>
+              <ManageAccounts />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -35,7 +40,9 @@ export default function AppRoutes() {
         path="/attendance"
         element={
           <ProtectedRoute allowedRoles={["teacher"]}>
-            <Attendance />
+            <Layout>
+              <Attendance />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -43,7 +50,9 @@ export default function AppRoutes() {
         path="/marks"
         element={
           <ProtectedRoute allowedRoles={["teacher"]}>
-            <Marks />
+            <Layout>
+              <Marks />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -51,7 +60,9 @@ export default function AppRoutes() {
         path="/risk"
         element={
           <ProtectedRoute allowedRoles={["teacher"]}>
-            <StudentRisk />
+            <Layout>
+              <StudentRisk />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -60,7 +71,9 @@ export default function AppRoutes() {
         path="/fees"
         element={
           <ProtectedRoute allowedRoles={["fee-coordinator"]}>
-            <FeeStatus />
+            <Layout>
+              <FeeStatus />
+            </Layout>
           </ProtectedRoute>
         }
       />
