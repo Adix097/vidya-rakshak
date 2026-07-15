@@ -2,7 +2,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import School from "../models/school.js";
-import Account from "../models/account.js";
+import account from "../models/account.js";
 import Class from "../models/class.js";
 
 // chatgpt wrote the code below
@@ -12,7 +12,7 @@ async function seed() {
 
   //! wipe existing data
   await School.deleteMany({});
-  await Account.deleteMany({});
+  await account.deleteMany({});
   await Class.deleteMany({});
 
   const school = await School.create({
@@ -22,7 +22,7 @@ async function seed() {
 
   const passwordHash = await bcrypt.hash("password123", 10);
 
-  const admin = await Account.create({
+  const admin = await account.create({
     name: "Priya Sharma",
     email: "admin@school.edu.in",
     passwordHash,
@@ -30,7 +30,7 @@ async function seed() {
     schoolId: school._id,
   });
 
-  const teacher = await Account.create({
+  const teacher = await account.create({
     name: "Kavita Rao",
     email: "teacher@school.edu.in",
     passwordHash,
@@ -38,7 +38,7 @@ async function seed() {
     schoolId: school._id,
   });
 
-  const feeCoordinator = await Account.create({
+  const feeCoordinator = await account.create({
     name: "Ramesh Chandra",
     email: "fees@school.edu.in",
     passwordHash,

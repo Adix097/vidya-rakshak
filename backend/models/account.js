@@ -38,6 +38,6 @@ accountSchema.methods.comparePassword = async function (plainPassword) {
   return bcrypt.compare(plainPassword, this.passwordHash);
 };
 
-const Account = mongoose.model("Account", accountSchema);
+const account = mongoose.model("account", accountSchema);
 
-export default Account;
+export default account;

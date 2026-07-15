@@ -14,7 +14,7 @@ const classSchema = new mongoose.Schema(
     },
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Account",
+      ref: "account",
       default: null,
     },
   },
