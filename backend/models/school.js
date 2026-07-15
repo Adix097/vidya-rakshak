@@ -11,11 +11,6 @@ const schoolSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "approved", //! danger here
-    },
   },
   { timestamps: true },
 );
