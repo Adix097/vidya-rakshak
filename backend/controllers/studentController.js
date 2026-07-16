@@ -55,3 +55,29 @@ export async function getStudents(req, res) {
   const students = await Student.find(filter).populate("classId", "name");
   res.json(students);
 }
+
+export async function updateMarks(req, res) {
+  const { id } = req.params;
+  const { marks } = req.body;
+
+  if (
+    marks !== null &&
+    (typeof marks !== "number" || marks < 0 || marks > 100)
+  ) {
+    return res.status(400).json({ message: "out of range" });
+  }
+
+  const student = await Student.findOneAndUpdate(
+    { _id: id, schoolId: req.user.schoolId },
+    { marks },
+    { new: true },
+  );
+
+  if (!student) {
+    return res
+      .status(404)
+      .json({ message: "Student not found in this school" });
+  }
+
+  res.json(student);
+}
