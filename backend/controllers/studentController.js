@@ -22,6 +22,20 @@ export async function createStudent(req, res) {
   }
 
   try {
+    let travelMinutes = null;
+    const coords = await geocodeAddress(address);
+    if (coords) {
+      const school = await School.findById(req.user.schoolId);
+      if (school) {
+        travelMinutes = estimateTravelMinutes(
+          school.lat,
+          school.lng,
+          coords.lat,
+          coords.lng,
+        );
+      }
+    }
+
     const student = await Student.create({
       name,
       rollNumber,
@@ -30,30 +44,8 @@ export async function createStudent(req, res) {
       feeAmount,
       feeStatus: feeStatus || "pending",
       schoolId: req.user.schoolId,
+      travelMinutes,
     });
-
-    // TODO: this geocode + travel-time calculation is currently
-    // fire-and-forget (non-blocking) — the API responds immediately with travelMinutes: null,
-    // and the real value fills in moments later once Nominatim responds.
-    // Tradeoff: faster response, but travelMinutes may briefly be null right after creation
-    // Alternative: await this before responding, so travelMinutes is always populated
-    // in the create response — slower (adds Nominatim's response time to the request),
-    geocodeAddress(address)
-      .then(async (coords) => {
-        if (!coords) return;
-        const school = await School.findById(req.user.schoolId);
-        if (!school) return;
-        const travelMinutes = estimateTravelMinutes(
-          school.lat,
-          school.lng,
-          coords.lat,
-          coords.lng,
-        );
-        await Student.findByIdAndUpdate(student._id, { travelMinutes });
-      })
-      .catch((err) =>
-        console.error("Distance calculation failed:", err.message),
-      );
 
     res.status(201).json(student);
   } catch (err) {
