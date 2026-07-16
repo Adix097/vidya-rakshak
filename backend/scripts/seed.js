@@ -18,6 +18,8 @@ async function seed() {
   const school = await School.create({
     name: "Rajkiya Pratibha Vikas Vidyalaya",
     address: "Rohini, Delhi",
+    lat: 28.7041,
+    lng: 77.1025,
   });
 
   const passwordHash = await bcrypt.hash("password123", 10);

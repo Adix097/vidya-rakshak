@@ -11,6 +11,14 @@ const schoolSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    lat: {
+      type: Number,
+      required: true,
+    },
+    lng: {
+      type: Number,
+      required: true,
+    },
   },
   { timestamps: true },
 );
