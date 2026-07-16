@@ -16,7 +16,7 @@ export async function createStudent(req, res) {
     schoolId: req.user.schoolId,
   });
   if (!classDoc) {
-    return res.status(404).json({ message: "Class not found for this school" });
+    return res.status(404).json({ message: "Class not found" });
   }
 
   try {
@@ -74,9 +74,30 @@ export async function updateMarks(req, res) {
   );
 
   if (!student) {
+    return res.status(404).json({ message: "Student not found" });
+  }
+
+  res.json(student);
+}
+
+export async function updateFeeStatus(req, res) {
+  const { id } = req.params;
+  const { feeStatus } = req.body;
+
+  if (!["paid", "pending", "overdue"].includes(feeStatus)) {
     return res
-      .status(404)
-      .json({ message: "Student not found in this school" });
+      .status(400)
+      .json({ message: "Must be paid, pending, or overdue" });
+  }
+
+  const student = await Student.findOneAndUpdate(
+    { _id: id, schoolId: req.user.schoolId },
+    { feeStatus },
+    { new: true },
+  );
+
+  if (!student) {
+    return res.status(404).json({ message: "Student not found" });
   }
 
   res.json(student);
