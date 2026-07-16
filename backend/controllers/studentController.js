@@ -4,12 +4,27 @@ import School from "../models/school.js";
 import { geocodeAddress, estimateTravelMinutes } from "../utils/distance.js";
 
 export async function createStudent(req, res) {
-  const { name, rollNumber, classId, address, feeAmount, feeStatus } = req.body;
+  const { name, gender, rollNumber, classId, address, feeAmount, feeStatus } =
+    req.body;
 
-  if (!name || !rollNumber || !classId || !address || feeAmount == null) {
+  if (
+    !name ||
+    !gender ||
+    !rollNumber ||
+    !classId ||
+    !address ||
+    feeAmount == null
+  ) {
     return res.status(400).json({
-      message: "name, rollNumber, classId, address, and feeAmount are required",
+      message:
+        "name, gender, rollNumber, classId, address, and feeAmount are required",
     });
+  }
+
+  if (!["male", "female", "other"].includes(gender)) {
+    return res
+      .status(400)
+      .json({ message: "gender must be male, female, or other" });
   }
 
   // confirm the class actually exists and belongs to this coordinator's school
@@ -38,6 +53,7 @@ export async function createStudent(req, res) {
 
     const student = await Student.create({
       name,
+      gender,
       rollNumber,
       classId,
       address,

@@ -7,6 +7,11 @@ const studentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+      required: true,
+    },
     rollNumber: {
       type: String,
       required: true,
