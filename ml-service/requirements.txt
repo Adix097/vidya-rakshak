@@ -1,0 +1,9 @@
+jupyter
+pandas
+numpy
+scikit-learn
+optuna
+imbalanced-learn
+xgboost
+lightgbm
+seaborn
