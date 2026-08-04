@@ -7,6 +7,12 @@ const studentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    age: {
+      type: Number,
+      required: true,
+      min: 3,
+      max: 100,
+    },
     gender: {
       type: String,
       enum: ["male", "female", "other"],
@@ -27,9 +33,10 @@ const studentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    travelMinutes: {
+    distanceToSchool: {
       type: Number,
-      default: null, // not required at creation
+      required: true,
+      min: 0,
     },
     marks: {
       type: Number,

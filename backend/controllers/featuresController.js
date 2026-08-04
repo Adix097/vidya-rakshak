@@ -16,48 +16,38 @@ export async function getStudentFeatures(req, res) {
       .json({ message: "Student not found in this school" });
   }
 
-  // --- attendance_pct: % of marked days present, across all recorded days ---
+  // --- attendance_pct: % of marked days present ---
   const attendanceRecords = await Attendance.find({ studentId: id });
   const totalDays = attendanceRecords.length;
   const presentDays = attendanceRecords.filter(
     (r) => r.status === "present",
   ).length;
+  
   const attendancePct =
     totalDays > 0 ? Math.round((presentDays / totalDays) * 1000) / 10 : null;
 
-  // --- avg_assignment_delay_days: average(submittedAt - dueDate) across this student's class assignments ---
+  // --- homework_completion: % of class assignments this student actually submitted ---
   const assignments = await Assignment.find({ classId: student.classId });
   const submissions = await Submission.find({
     studentId: id,
     assignmentId: { $in: assignments.map((a) => a._id) },
   });
+  const homeworkCompletion =
+    assignments.length > 0
+      ? Math.round((submissions.length / assignments.length) * 1000) / 10
+      : null;
 
-  let avgDelayDays = null;
-  if (submissions.length > 0) {
-    const delays = submissions.map((sub) => {
-      const assignment = assignments.find((a) =>
-        a._id.equals(sub.assignmentId),
-      );
-      const dueDate = new Date(assignment.dueDate);
-      const submittedAt = new Date(sub.submittedAt);
-      const diffMs = submittedAt - dueDate;
-      return diffMs / (1000 * 60 * 60 * 24); // ms -> days, can be negative if submitted early
-    });
-    avgDelayDays =
-      Math.round((delays.reduce((sum, d) => sum + d, 0) / delays.length) * 10) /
-      10;
-  }
-
-  // --- fee_due: paid -> no, pending/overdue -> yes (locked earlier) ---
-  const feeDue = student.feeStatus === "paid" ? "no" : "yes";
+  // --- fee_status: paid -> no, pending/overdue -> yes ---
+  const feeStatus = student.feeStatus === "paid" ? "no" : "yes";
 
   res.json({
     student_id: student._id,
     gender: student.gender,
+    age: student.age,
     attendance_pct: attendancePct,
-    avg_assignment_delay_days: avgDelayDays,
-    travel_minutes: student.travelMinutes,
     marks: student.marks,
-    fee_due: feeDue,
+    homework_completion: homeworkCompletion,
+    distance_to_school: student.distanceToSchool,
+    fee_status: feeStatus,
   });
 }

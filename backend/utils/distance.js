@@ -1,5 +1,3 @@
-const AVERAGE_SPEED_KMPH = 25; //! very rough assumption
-
 // Haversine formula
 function haversineDistanceKm(lat1, lng1, lat2, lng2) {
   const toRad = (deg) => (deg * Math.PI) / 180;
@@ -36,9 +34,6 @@ export async function geocodeAddress(address) {
   return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
 }
 
-// Given two lat/lng points, return estimated travel time in minutes
-export function estimateTravelMinutes(lat1, lng1, lat2, lng2) {
-  const distanceKm = haversineDistanceKm(lat1, lng1, lat2, lng2);
-  const hours = distanceKm / AVERAGE_SPEED_KMPH;
-  return Math.round(hours * 60);
+export function calculateDistanceKm(lat1, lng1, lat2, lng2) {
+  return Math.round(haversineDistanceKm(lat1, lng1, lat2, lng2) * 100) / 100;
 }

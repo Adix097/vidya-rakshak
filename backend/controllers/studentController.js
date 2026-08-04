@@ -1,11 +1,19 @@
 import Student from "../models/student.js";
 import Class from "../models/class.js";
 import School from "../models/school.js";
-import { geocodeAddress, estimateTravelMinutes } from "../utils/distance.js";
+import { geocodeAddress, calculateDistanceKm } from "../utils/distance.js";
 
 export async function createStudent(req, res) {
-  const { name, gender, rollNumber, classId, address, feeAmount, feeStatus } =
-    req.body;
+  const {
+    name,
+    age,
+    gender,
+    rollNumber,
+    classId,
+    address,
+    feeAmount,
+    feeStatus,
+  } = req.body;
 
   if (
     !name ||
@@ -13,11 +21,12 @@ export async function createStudent(req, res) {
     !rollNumber ||
     !classId ||
     !address ||
+    age == null ||
     feeAmount == null
   ) {
     return res.status(400).json({
       message:
-        "name, gender, rollNumber, classId, address, and feeAmount are required",
+        "name, gender, rollNumber, classId, age, address, and feeAmount are required",
     });
   }
 
@@ -25,6 +34,12 @@ export async function createStudent(req, res) {
     return res
       .status(400)
       .json({ message: "gender must be male, female, or other" });
+  }
+
+  if (typeof age !== "number" || age < 3 || age > 100) {
+    return res.status(400).json({
+      message: "age must be between 3 and 100",
+    });
   }
 
   // confirm the class actually exists and belongs to this coordinator's school
@@ -37,12 +52,12 @@ export async function createStudent(req, res) {
   }
 
   try {
-    let travelMinutes = null;
+    let distanceToSchool = null;
     const coords = await geocodeAddress(address);
     if (coords) {
       const school = await School.findById(req.user.schoolId);
       if (school) {
-        travelMinutes = estimateTravelMinutes(
+        distanceToSchool = calculateDistanceKm(
           school.lat,
           school.lng,
           coords.lat,
@@ -54,13 +69,14 @@ export async function createStudent(req, res) {
     const student = await Student.create({
       name,
       gender,
+      age,
       rollNumber,
       classId,
       address,
       feeAmount,
       feeStatus: feeStatus || "pending",
       schoolId: req.user.schoolId,
-      travelMinutes,
+      distanceToSchool,
     });
 
     res.status(201).json(student);
