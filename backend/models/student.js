@@ -59,6 +59,15 @@ const studentSchema = new mongoose.Schema(
       ref: "School",
       required: true,
     },
+    riskLevel: {
+      type: String,
+      enum: ["low", "medium", "high", "critical"],
+      default: null,
+    },
+    riskScore: {
+      type: Number,
+      default: null,
+    },
   },
   { timestamps: true },
 );
