@@ -1,11 +1,58 @@
-import { useState } from "react";
-import { CLASSES, STUDENTS } from "./temp";
-import RiskBadge from "../../Components/RiskBadge";
+import { useState, useEffect } from "react";
+import { api } from "../../api/client";
+import RiskBadge from "../../components/RiskBadge";
 
-const StudentRisk = () => {
-  const [selectedClass, setSelectedClass] = useState(CLASSES[0].id);
+export default function StudentRisk() {
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [students, setStudents] = useState([]);
+  const [predicting, setPredicting] = useState({}); // studentId
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const studentsInClass = STUDENTS.filter((s) => s.classId === selectedClass);
+  useEffect(() => {
+    api
+      .get("/api/classes")
+      .then((data) => {
+        setClasses(data);
+        if (data.length > 0) setSelectedClass(data[0]._id);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedClass) return;
+    api
+      .get(`/api/students?classId=${selectedClass}`)
+      .then(setStudents)
+      .catch((err) => setError(err.message));
+  }, [selectedClass]);
+
+  const handlePredict = async (studentId) => {
+    setError("");
+    setPredicting((prev) => ({ ...prev, [studentId]: true }));
+    try {
+      const result = await api.post(`/api/students/${studentId}/predict`, {});
+      setStudents((prev) =>
+        prev.map((s) =>
+          s._id === studentId
+            ? {
+                ...s,
+                riskLevel: result.risk_level,
+                riskScore: result.risk_score,
+              }
+            : s,
+        ),
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPredicting((prev) => ({ ...prev, [studentId]: false }));
+    }
+  };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
 
   return (
     <div className="max-w-2xl">
@@ -13,9 +60,10 @@ const StudentRisk = () => {
         Student Risk
       </h1>
       <p className="text-sm text-gray-500 mb-6">
-        Static placeholder scores — real predictions come from the ML service
-        later
+        Predictions from the ML service
       </p>
+
+      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
       <div className="mb-6">
         <label className="text-sm text-gray-600 mr-2">Class</label>
@@ -24,8 +72,8 @@ const StudentRisk = () => {
           onChange={(e) => setSelectedClass(e.target.value)}
           className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
         >
-          {CLASSES.map((c) => (
-            <option key={c.id} value={c.id}>
+          {classes.map((c) => (
+            <option key={c._id} value={c._id}>
               {c.name}
             </option>
           ))}
@@ -33,18 +81,29 @@ const StudentRisk = () => {
       </div>
 
       <div className="bg-white border border-gray-200 rounded divide-y divide-gray-100">
-        {studentsInClass.map((student) => (
+        {students.map((student) => (
           <div
-            key={student.id}
+            key={student._id}
             className="flex items-center justify-between px-4 py-3"
           >
             <span className="text-sm text-gray-800">{student.name}</span>
-            <RiskBadge level={student.risk} />
+            <div className="flex items-center gap-3">
+              {student.riskLevel ? (
+                <RiskBadge level={student.riskLevel} />
+              ) : (
+                <span className="text-xs text-gray-400">Not yet predicted</span>
+              )}
+              <button
+                onClick={() => handlePredict(student._id)}
+                disabled={predicting[student._id]}
+                className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {predicting[student._id] ? "Predicting..." : "Predict"}
+              </button>
+            </div>
           </div>
         ))}
       </div>
     </div>
   );
-};
-
-export default StudentRisk;
+}
