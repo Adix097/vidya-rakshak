@@ -1,10 +1,14 @@
-import { useState } from "react";
-import { CLASSES, STUDENTS } from "./temp";
+import { useState, useEffect } from "react";
+import { api } from "../../api/client";
 
-const Attendance = () => {
-  const [selectedClass, setSelectedClass] = useState(CLASSES[0].id);
-  const [records, setRecords] = useState({}); // { studentId: 'present' | 'absent' }
+export default function Attendance() {
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [students, setStudents] = useState([]);
+  const [records, setRecords] = useState({});
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const today = new Date().toLocaleDateString("en-IN", {
     day: "numeric",
@@ -12,18 +16,50 @@ const Attendance = () => {
     year: "numeric",
   });
 
-  const studentsInClass = STUDENTS.filter((s) => s.classId === selectedClass);
+  // load this teacher's classes on mount
+  useEffect(() => {
+    api
+      .get("/api/classes")
+      .then((data) => {
+        setClasses(data);
+        if (data.length > 0) setSelectedClass(data[0]._id);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // load students whenever the selected class changes
+  useEffect(() => {
+    if (!selectedClass) return;
+    api
+      .get(`/api/students?classId=${selectedClass}`)
+      .then(setStudents)
+      .catch((err) => setError(err.message));
+  }, [selectedClass]);
 
   const setStatus = (studentId, status) => {
     setRecords((prev) => ({ ...prev, [studentId]: status }));
     setSaved(false);
   };
 
-  const handleSave = () => {
-    // TODO: replace with real API call once Express backend exists
-    console.log("Saving attendance for", selectedClass, records);
-    setSaved(true);
+  const handleSave = async () => {
+    setError("");
+    const payload = {
+      records: Object.entries(records).map(([studentId, status]) => ({
+        studentId,
+        classId: selectedClass,
+        status,
+      })),
+    };
+    try {
+      await api.post("/api/attendance", payload);
+      setSaved(true);
+    } catch (err) {
+      setError(err.message);
+    }
   };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
 
   return (
     <div className="max-w-2xl">
@@ -31,6 +67,8 @@ const Attendance = () => {
       <p className="text-sm text-gray-500 mb-6">
         {today} — editable for today only
       </p>
+
+      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
       <div className="mb-6">
         <label className="text-sm text-gray-600 mr-2">Class</label>
@@ -42,8 +80,8 @@ const Attendance = () => {
           }}
           className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
         >
-          {CLASSES.map((c) => (
-            <option key={c.id} value={c.id}>
+          {classes.map((c) => (
+            <option key={c._id} value={c._id}>
               {c.name}
             </option>
           ))}
@@ -51,17 +89,17 @@ const Attendance = () => {
       </div>
 
       <div className="bg-white border border-gray-200 rounded divide-y divide-gray-100">
-        {studentsInClass.map((student) => {
-          const status = records[student.id] || null;
+        {students.map((student) => {
+          const status = records[student._id] || null;
           return (
             <div
-              key={student.id}
+              key={student._id}
               className="flex items-center justify-between px-4 py-3"
             >
               <span className="text-sm text-gray-800">{student.name}</span>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setStatus(student.id, "present")}
+                  onClick={() => setStatus(student._id, "present")}
                   className={`px-3 py-1 text-xs rounded border ${
                     status === "present"
                       ? "bg-green-50 border-green-300 text-green-700"
@@ -71,7 +109,7 @@ const Attendance = () => {
                   Present
                 </button>
                 <button
-                  onClick={() => setStatus(student.id, "absent")}
+                  onClick={() => setStatus(student._id, "absent")}
                   className={`px-3 py-1 text-xs rounded border ${
                     status === "absent"
                       ? "bg-red-50 border-red-300 text-red-700"
@@ -92,13 +130,7 @@ const Attendance = () => {
       >
         Save Attendance
       </button>
-      {saved && (
-        <span className="ml-3 text-sm text-green-600">
-          Saved (local only, no backend yet)
-        </span>
-      )}
+      {saved && <span className="ml-3 text-sm text-green-600">Saved</span>}
     </div>
   );
-};
-
-export default Attendance;
+}

@@ -1,21 +1,42 @@
-import { useState } from "react";
-import { CLASSES, STUDENTS } from "./temp";
+import { useState, useEffect } from "react";
+import { api } from "../../api/client";
 
-const Marks = () => {
-  const [selectedClass, setSelectedClass] = useState(CLASSES[0].id);
-  const [marks, setMarks] = useState(() => {
-    const initial = {};
-    STUDENTS.forEach((s) => {
-      initial[s.id] = s.marks;
-    });
-    return initial;
-  });
+export default function Marks() {
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [students, setStudents] = useState([]);
+  const [marks, setMarks] = useState({});
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const studentsInClass = STUDENTS.filter((s) => s.classId === selectedClass);
+  useEffect(() => {
+    api
+      .get("/api/classes")
+      .then((data) => {
+        setClasses(data);
+        if (data.length > 0) setSelectedClass(data[0]._id);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedClass) return;
+    api
+      .get(`/api/students?classId=${selectedClass}`)
+      .then((data) => {
+        setStudents(data);
+        const initial = {};
+        data.forEach((s) => {
+          initial[s._id] = s.marks;
+        });
+        setMarks(initial);
+      })
+      .catch((err) => setError(err.message));
+  }, [selectedClass]);
 
   const handleChange = (studentId, value) => {
-    // allow empty string (clearing the field) or a valid 0-100 number
     if (value === "") {
       setMarks((prev) => ({ ...prev, [studentId]: null }));
       setSaved(false);
@@ -27,18 +48,31 @@ const Marks = () => {
     setSaved(false);
   };
 
-  const handleSave = () => {
-    // TODO: replace with real API call once Express backend exists
-    console.log("Saving marks for", selectedClass, marks);
-    setSaved(true);
+  const handleSave = async () => {
+    setError("");
+    try {
+      // one PATCH per changed student
+      await Promise.all(
+        students.map((s) =>
+          api.patch(`/api/students/${s._id}/marks`, { marks: marks[s._id] }),
+        ),
+      );
+      setSaved(true);
+    } catch (err) {
+      setError(err.message);
+    }
   };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
 
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold text-gray-800 mb-1">Marks</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Out of 100 — can be updated anytime
+        Out of 100
       </p>
+
+      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
       <div className="mb-6">
         <label className="text-sm text-gray-600 mr-2">Class</label>
@@ -50,8 +84,8 @@ const Marks = () => {
           }}
           className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
         >
-          {CLASSES.map((c) => (
-            <option key={c.id} value={c.id}>
+          {classes.map((c) => (
+            <option key={c._id} value={c._id}>
               {c.name}
             </option>
           ))}
@@ -59,9 +93,9 @@ const Marks = () => {
       </div>
 
       <div className="bg-white border border-gray-200 rounded divide-y divide-gray-100">
-        {studentsInClass.map((student) => (
+        {students.map((student) => (
           <div
-            key={student.id}
+            key={student._id}
             className="flex items-center justify-between px-4 py-3"
           >
             <span className="text-sm text-gray-800">{student.name}</span>
@@ -69,8 +103,8 @@ const Marks = () => {
               type="number"
               min="0"
               max="100"
-              value={marks[student.id] ?? ""}
-              onChange={(e) => handleChange(student.id, e.target.value)}
+              value={marks[student._id] ?? ""}
+              onChange={(e) => handleChange(student._id, e.target.value)}
               placeholder="—"
               className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right"
             />
@@ -84,13 +118,7 @@ const Marks = () => {
       >
         Save Marks
       </button>
-      {saved && (
-        <span className="ml-3 text-sm text-green-600">
-          Saved (local only, no backend yet)
-        </span>
-      )}
+      {saved && <span className="ml-3 text-sm text-green-600">Saved</span>}
     </div>
   );
-};
-
-export default Marks;
+}
