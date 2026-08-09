@@ -1,8 +1,15 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import random
+import pickle
+import pandas as pd
 
 app = FastAPI()
+
+with open("student_dropout_model.pkl", "rb") as f:
+    model = pickle.load(f)
+
+print("Model classes:", model.classes_)
+DROPOUT_INDEX = 1 if model.classes_[1] == "Dropout" else 0
 
 class StudentFeatures(BaseModel):
     student_id: str
@@ -16,8 +23,18 @@ class StudentFeatures(BaseModel):
 
 @app.post("/predict")
 def predict(features: StudentFeatures):
-    # replace with real model once finalized
-    risk_score = round(random.uniform(0, 1), 4)
+    row = pd.DataFrame([{
+        "gender": features.gender,
+        "age": features.age,
+        "attendance_pct": features.attendance_pct,
+        "marks": features.marks,
+        "homework_completion": features.homework_completion,
+        "distance_to_school": features.distance_to_school,
+        "fee_status": features.fee_status,
+    }])
+
+    probabilities = model.predict_proba(row)[0]
+    risk_score = float(probabilities[DROPOUT_INDEX])
 
     if risk_score < 0.4:
         risk_level = "low"
@@ -31,5 +48,5 @@ def predict(features: StudentFeatures):
     return {
         "student_id": features.student_id,
         "risk_level": risk_level,
-        "risk_score": risk_score,
+        "risk_score": round(risk_score, 4),
     }
