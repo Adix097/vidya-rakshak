@@ -151,3 +151,18 @@ export async function updateFeeStatus(req, res) {
 
   res.json(student);
 }
+
+export async function getRiskOverview(req, res) {
+  const students = await Student.find({ schoolId: req.user.schoolId });
+
+  const totalStudents = students.length;
+  const riskCounts = { low: 0, medium: 0, high: 0, critical: 0 };
+
+  students.forEach((s) => {
+    if (s.riskLevel && riskCounts[s.riskLevel] !== undefined) {
+      riskCounts[s.riskLevel]++;
+    }
+  });
+
+  res.json({ totalStudents, riskCounts });
+}

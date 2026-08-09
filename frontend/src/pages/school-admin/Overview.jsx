@@ -1,4 +1,5 @@
-import { SCHOOL_SUMMARY } from "./temp";
+import { useState, useEffect } from "react";
+import { api } from "../../api/client";
 
 const RISK_ORDER = ["low", "medium", "high", "critical"];
 const RISK_STYLES = {
@@ -8,8 +9,19 @@ const RISK_STYLES = {
   critical: "bg-red-50 border-red-300 text-red-700",
 };
 
-const Overview = () => {
-  const { totalStudents, riskCounts } = SCHOOL_SUMMARY;
+export default function Overview() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api
+      .get("/api/students/overview")
+      .then(setData)
+      .catch((err) => setError(err.message));
+  }, []);
+
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (!data) return <p className="text-sm text-gray-500">Loading...</p>;
 
   return (
     <div className="max-w-2xl">
@@ -19,7 +31,7 @@ const Overview = () => {
       <div className="bg-white border border-gray-200 rounded p-4 mb-6">
         <div className="text-sm text-gray-500">Total Students</div>
         <div className="text-2xl font-semibold text-gray-800">
-          {totalStudents}
+          {data.totalStudents}
         </div>
       </div>
 
@@ -31,13 +43,11 @@ const Overview = () => {
           >
             <div className="text-xs capitalize">{level}</div>
             <div className="text-xl font-semibold">
-              {riskCounts[level] ?? 0}
+              {data.riskCounts[level] ?? 0}
             </div>
           </div>
         ))}
       </div>
     </div>
   );
-};
-
-export default Overview;
+}

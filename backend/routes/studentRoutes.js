@@ -19,6 +19,7 @@ router.patch(
   requireRole("fee-coordinator"),
   updateFeeStatus,
 );
+router.get('/overview', requireAuth, requireRole('school-admin'), getRiskOverview);
 router.get("/:id/features", requireAuth, getStudentFeatures);
 
 export default router;
