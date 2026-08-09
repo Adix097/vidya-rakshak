@@ -1,23 +1,39 @@
-import { useState } from "react";
-import { ACCOUNTS } from "./temp";
+import { useState, useEffect } from "react";
+import { api } from "../../api/client";
 
-const ManageAccounts = () => {
-  const [accounts, setAccounts] = useState(ACCOUNTS);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("teacher");
+export default function ManageAccounts() {
+  const [accounts, setAccounts] = useState([]);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "teacher",
+  });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleAdd = (e) => {
-    e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
-    const newAccount = { id: Date.now(), name, email, role };
-    setAccounts((prev) => [...prev, newAccount]);
-    setName("");
-    setEmail("");
+  const loadAccounts = () => {
+    api
+      .get("/api/accounts")
+      .then(setAccounts)
+      .catch((err) => setError(err.message));
   };
 
-  const handleRemove = (id) => {
-    setAccounts((prev) => prev.filter((a) => a.id !== id));
+  useEffect(loadAccounts, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      await api.post("/api/accounts", form);
+      setForm({ name: "", email: "", password: "", role: "teacher" });
+      loadAccounts();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -29,6 +45,8 @@ const ManageAccounts = () => {
         Teachers and Fee Coordinators for this school
       </p>
 
+      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+
       <form
         onSubmit={handleAdd}
         className="bg-white border border-gray-200 rounded p-4 mb-6 space-y-3"
@@ -37,20 +55,32 @@ const ManageAccounts = () => {
           <input
             type="text"
             placeholder="Full name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            required
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
           />
           <input
             type="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            required
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+          />
+        </div>
+        <div className="flex gap-3">
+          <input
+            type="password"
+            placeholder="Password"
+            required
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
             className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
           />
           <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
             className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
           >
             <option value="teacher">Teacher</option>
@@ -59,16 +89,17 @@ const ManageAccounts = () => {
         </div>
         <button
           type="submit"
-          className="px-4 py-2 bg-gray-800 text-white text-sm rounded hover:bg-gray-700"
+          disabled={submitting}
+          className="px-4 py-2 bg-gray-800 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50"
         >
-          Add Account
+          {submitting ? "Adding..." : "Add Account"}
         </button>
       </form>
 
       <div className="bg-white border border-gray-200 rounded divide-y divide-gray-100">
         {accounts.map((account) => (
           <div
-            key={account.id}
+            key={account._id}
             className="flex items-center justify-between px-4 py-3"
           >
             <div>
@@ -77,17 +108,14 @@ const ManageAccounts = () => {
                 {account.email} — {account.role}
               </div>
             </div>
-            <button
-              onClick={() => handleRemove(account.id)}
-              className="text-xs text-red-600 hover:text-red-800"
-            >
-              Remove
-            </button>
           </div>
         ))}
+        {accounts.length === 0 && (
+          <p className="text-sm text-gray-400 px-4 py-6 text-center">
+            No accounts yet.
+          </p>
+        )}
       </div>
     </div>
   );
-};
-
-export default ManageAccounts;
+}
