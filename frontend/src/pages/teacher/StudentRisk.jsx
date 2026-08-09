@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../api/client";
-import RiskBadge from "../../components/RiskBadge.jsx";
+import RiskBadge from "../../Components/RiskBadge.jsx";
 
 export default function StudentRisk() {
   const [classes, setClasses] = useState([]);
