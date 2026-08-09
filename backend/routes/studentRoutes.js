@@ -4,6 +4,7 @@ import {
   getStudents,
   updateMarks,
   updateFeeStatus,
+  getRiskOverview,
 } from "../controllers/studentController.js";
 import { getStudentFeatures } from "../controllers/featuresController.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
