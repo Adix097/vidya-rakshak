@@ -3,8 +3,29 @@ import Attendance from "../models/attendance.js";
 import Assignment from "../models/assignment.js";
 import Submission from "../models/submission.js";
 
-//! move to .env later on
-const ML_SERVICE_URL = "http://localhost:8000";
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
+const ML_FETCH_TIMEOUT_MS = 20000;
+const ML_RETRY_DELAY_MS = 3000;
+
+console.log(`ML service URL: ${ML_SERVICE_URL}`);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ML_FETCH_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("ML service request timed out");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export async function predictRisk(req, res) {
   const { id } = req.params;
@@ -53,13 +74,49 @@ export async function predictRisk(req, res) {
   };
 
   try {
-    const response = await fetch(`${ML_SERVICE_URL}/predict`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    let response;
+
+    try {
+      response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      if (err.message.includes("timed out")) {
+        console.warn(
+          "ML service request timed out on first attempt, retrying after delay",
+          err,
+        );
+        await sleep(ML_RETRY_DELAY_MS);
+
+        try {
+          response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        } catch (retryErr) {
+          console.error("Prediction request failed after retry", retryErr);
+          return res.status(504).json({
+            message: "ML service is waking up. Please try again in a moment.",
+            error: retryErr.message,
+          });
+        }
+      } else {
+        console.error("Prediction request failed", err);
+        return res.status(502).json({
+          message: "Failed to get prediction from ML service.",
+          error: err.message,
+        });
+      }
+    }
 
     if (!response.ok) {
+      const body = await response.text();
+      console.error(
+        `ML service responded with status ${response.status}: ${body}`,
+      );
       throw new Error(`ML service responded with ${response.status}`);
     }
 
@@ -72,6 +129,7 @@ export async function predictRisk(req, res) {
 
     res.json(prediction);
   } catch (err) {
+    console.error("Prediction endpoint error", err);
     res.status(502).json({
       message: "Failed to get prediction from ML service",
       error: err.message,

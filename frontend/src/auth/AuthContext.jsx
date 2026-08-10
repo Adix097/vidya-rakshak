@@ -13,10 +13,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
+
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setToken(savedToken);
+        setUser(parsedUser);
+      } catch (err) {
+        console.error(
+          "AuthContext: failed to parse saved user from localStorage",
+          err,
+        );
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
+
     setLoading(false);
   }, []);
 
