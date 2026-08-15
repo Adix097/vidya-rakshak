@@ -15,7 +15,7 @@ with MODEL_PATH.open("rb") as fh:
     model = pickle.load(fh)
 
 classes = model.classes_
-DROPOUT_INDEX = 1
+DROPOUT_INDEX = int(np.flatnonzero(classes == 1)[0]) if 1 in classes else 1
 
 
 class StudentFeatures(BaseModel):
@@ -28,19 +28,30 @@ class StudentFeatures(BaseModel):
     distance_to_school: float | None = None
     fee_status: str
 
+    @property
+    def normalized_gender(self) -> str:
+        return str(self.gender).strip().lower() if self.gender else "other"
+
+    @property
+    def normalized_fee_status(self) -> str:
+        value = str(self.fee_status).strip().lower()
+        if value in {"paid", "fully_paid", "not_due", "no"}:
+            return "no"
+        return "yes"
+
 
 @app.post("/predict")
 def predict(features: StudentFeatures):
     row = pd.DataFrame(
         [
             {
-                "gender": features.gender,
+                "gender": features.normalized_gender,
                 "age": features.age,
                 "attendance_pct": features.attendance_pct,
                 "marks": features.marks,
                 "homework_completion": features.homework_completion,
                 "distance_to_school": features.distance_to_school,
-                "fee_status": features.fee_status,
+                "fee_status": features.normalized_fee_status,
             }
         ]
     )
@@ -48,11 +59,11 @@ def predict(features: StudentFeatures):
     probabilities = model.predict_proba(row)[0]
     risk_score = float(probabilities[DROPOUT_INDEX])
 
-    if risk_score < 0.4:
+    if risk_score < 0.2:
         risk_level = "low"
-    elif risk_score < 0.6:
+    elif risk_score < 0.45:
         risk_level = "medium"
-    elif risk_score < 0.8:
+    elif risk_score < 0.7:
         risk_level = "high"
     else:
         risk_level = "critical"
