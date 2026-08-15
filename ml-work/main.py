@@ -1,15 +1,22 @@
+from __future__ import annotations
+
+import pickle
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
-import pickle
-import pandas as pd
 
 app = FastAPI()
+MODEL_PATH = Path(__file__).resolve().parent / "student_dropout_model.pkl"
 
-with open("model.pkl", "rb") as f:
-    model = pickle.load(f)
+with MODEL_PATH.open("rb") as fh:
+    model = pickle.load(fh)
 
-print("Model classes:", model.classes_)
-DROPOUT_INDEX = 1 if model.classes_[1] == "Dropout" else 0
+classes = model.classes_
+DROPOUT_INDEX = int(np.where(classes == 1)[0][0]) if 1 in classes else 1 if len(classes) > 1 else 0
+
 
 class StudentFeatures(BaseModel):
     student_id: str
@@ -21,17 +28,22 @@ class StudentFeatures(BaseModel):
     distance_to_school: float | None = None
     fee_status: str
 
+
 @app.post("/predict")
 def predict(features: StudentFeatures):
-    row = pd.DataFrame([{
-        "gender": features.gender,
-        "age": features.age,
-        "attendance_pct": features.attendance_pct,
-        "marks": features.marks,
-        "homework_completion": features.homework_completion,
-        "distance_to_school": features.distance_to_school,
-        "fee_status": features.fee_status,
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "gender": features.gender,
+                "age": features.age,
+                "attendance_pct": features.attendance_pct,
+                "marks": features.marks,
+                "homework_completion": features.homework_completion,
+                "distance_to_school": features.distance_to_school,
+                "fee_status": features.fee_status,
+            }
+        ]
+    )
 
     probabilities = model.predict_proba(row)[0]
     risk_score = float(probabilities[DROPOUT_INDEX])
