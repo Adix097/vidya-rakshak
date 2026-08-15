@@ -10,8 +10,6 @@ export default function StudentRisk() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
   useEffect(() => {
     api
       .get("/api/classes")
@@ -52,10 +50,15 @@ export default function StudentRisk() {
     }
   };
 
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const PREDICT_DELAY_MS = 0;
+
   const handlePredictAll = async () => {
     if (!students.length) return;
 
     setError("");
+    const results = [];
+
     for (const student of students) {
       setPredicting((prev) => ({ ...prev, [student._id]: true }));
       try {
@@ -67,13 +70,19 @@ export default function StudentRisk() {
               : s
           )
         );
+        results.push(`${student.name} - ${result.risk_score}`);
       } catch (err) {
+        results.push(`${student.name} - FAILED (${err.message})`);
         setError(`Failed on ${student.name}: ${err.message}`);
       } finally {
         setPredicting((prev) => ({ ...prev, [student._id]: false }));
       }
-      await sleep(1200); // space out requests to satisfy ML service's rate limit
+      if (PREDICT_DELAY_MS > 0) await sleep(PREDICT_DELAY_MS);
     }
+
+    console.log("--- start of the list ---");
+    results.forEach((line) => console.log(line));
+    console.log("--- end of the list ---");
   };
 
   if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
