@@ -6,23 +6,10 @@ import Submission from "../models/submission.js";
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 const ML_FETCH_TIMEOUT_MS = 20000;
 const ML_RETRY_DELAY_MS = 3000;
-const ML_REQUEST_DELAY_MS = 500; // throttle concurrent requests to avoid 429 on free tier
 
 console.log(`ML service URL: ${ML_SERVICE_URL}`);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Simple rate limiter: queue requests to the ML service
-let lastMLRequestTime = 0;
-async function throttledMLRequest(url, options) {
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastMLRequestTime;
-  if (timeSinceLastRequest < ML_REQUEST_DELAY_MS) {
-    await sleep(ML_REQUEST_DELAY_MS - timeSinceLastRequest);
-  }
-  lastMLRequestTime = Date.now();
-  return fetchWithTimeout(url, options);
-}
 
 async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
@@ -106,7 +93,7 @@ export async function predictRisk(req, res) {
     let response;
 
     try {
-      response = await throttledMLRequest(`${ML_SERVICE_URL}/predict`, {
+      response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -120,7 +107,7 @@ export async function predictRisk(req, res) {
         await sleep(ML_RETRY_DELAY_MS);
 
         try {
-          response = await throttledMLRequest(`${ML_SERVICE_URL}/predict`, {
+          response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -145,7 +132,7 @@ export async function predictRisk(req, res) {
     if (response.status === 429) {
       console.warn("ML service rate-limited (429), retrying after delay");
       await sleep(ML_RETRY_DELAY_MS);
-      response = await throttledMLRequest(`${ML_SERVICE_URL}/predict`, {
+      response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
