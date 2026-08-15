@@ -113,12 +113,28 @@ export async function predictRisk(req, res) {
       }
     }
 
+    if (response.status === 429) {
+      console.warn("ML service rate-limited (429), retrying after delay");
+      await sleep(ML_RETRY_DELAY_MS);
+      response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+
     if (!response.ok) {
       const body = await response.text();
       console.error(
         `ML service responded with status ${response.status}: ${body}`,
       );
-      throw new Error(`ML service responded with ${response.status}`);
+      return res.status(502).json({
+        message:
+          response.status === 429
+            ? "ML service is temporarily busy. Please wait a few seconds and try again."
+            : "ML service returned an error.",
+        error: `ML service responded with ${response.status}`,
+      });
     }
 
     const prediction = await response.json();
