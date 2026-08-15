@@ -52,6 +52,42 @@ export default function StudentRisk() {
     }
   };
 
+  const handlePredictAll = async () => {
+    if (!students.length) return;
+
+    setError("");
+    const allStudentIds = students.map((student) => student._id);
+
+    for (const studentId of allStudentIds) {
+      if (!predicting[studentId]) {
+        setPredicting((prev) => ({ ...prev, [studentId]: true }));
+      }
+    }
+
+    try {
+      await Promise.all(
+        allStudentIds.map(async (studentId) => {
+          const result = await api.post(`/api/students/${studentId}/predict`, {});
+          setStudents((prev) =>
+            prev.map((s) =>
+              s._id === studentId
+                ? {
+                    ...s,
+                    riskLevel: result.risk_level,
+                    riskScore: result.risk_score,
+                  }
+                : s,
+            ),
+          );
+        }),
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPredicting({});
+    }
+  };
+
   if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
 
   return (
@@ -65,19 +101,29 @@ export default function StudentRisk() {
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
-      <div className="mb-6">
-        <label className="text-sm text-gray-600 mr-2">Class</label>
-        <select
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div>
+          <label className="text-sm text-gray-600 mr-2">Class</label>
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
+          >
+            {classes.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={handlePredictAll}
+          disabled={!students.length || Object.values(predicting).some(Boolean)}
+          className="text-xs px-3 py-2 border border-blue-300 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {classes.map((c) => (
-            <option key={c._id} value={c._id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+          Predict All
+        </button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded divide-y divide-gray-100">
