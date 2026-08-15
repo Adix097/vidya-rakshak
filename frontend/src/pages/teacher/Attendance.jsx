@@ -28,12 +28,20 @@ export default function Attendance() {
       .finally(() => setLoading(false));
   }, []);
 
-  // load students whenever the selected class changes
+  // load students whenever selected class changes
+  //! random default values of attendance
   useEffect(() => {
     if (!selectedClass) return;
     api
       .get(`/api/students?classId=${selectedClass}`)
-      .then(setStudents)
+      .then((data) => {
+        setStudents(data);
+        const initial = {};
+        data.forEach((s) => {
+          initial[s._id] = Math.random() < 0.8 ? "present" : "absent"; // ~80% present, realistic default
+        });
+        setRecords(initial);
+      })
       .catch((err) => setError(err.message));
   }, [selectedClass]);
 
@@ -100,21 +108,19 @@ export default function Attendance() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setStatus(student._id, "present")}
-                  className={`px-3 py-1 text-xs rounded border ${
-                    status === "present"
-                      ? "bg-green-50 border-green-300 text-green-700"
-                      : "border-gray-300 text-gray-500 hover:bg-gray-50"
-                  }`}
+                  className={`px-3 py-1 text-xs rounded border ${status === "present"
+                    ? "bg-green-50 border-green-300 text-green-700"
+                    : "border-gray-300 text-gray-500 hover:bg-gray-50"
+                    }`}
                 >
                   Present
                 </button>
                 <button
                   onClick={() => setStatus(student._id, "absent")}
-                  className={`px-3 py-1 text-xs rounded border ${
-                    status === "absent"
-                      ? "bg-red-50 border-red-300 text-red-700"
-                      : "border-gray-300 text-gray-500 hover:bg-gray-50"
-                  }`}
+                  className={`px-3 py-1 text-xs rounded border ${status === "absent"
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "border-gray-300 text-gray-500 hover:bg-gray-50"
+                    }`}
                 >
                   Absent
                 </button>
