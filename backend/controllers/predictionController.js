@@ -108,6 +108,7 @@ export async function predictRisk(req, res) {
         return res.status(502).json({
           message: "Failed to get prediction from ML service.",
           error: err.message,
+          cause: err.cause ? String(err.cause) : null,
         });
       }
     }
@@ -129,10 +130,11 @@ export async function predictRisk(req, res) {
 
     res.json(prediction);
   } catch (err) {
-    console.error("Prediction endpoint error", err);
+    console.error("Prediction endpoint error", err, "cause:", err.cause);
     res.status(502).json({
       message: "Failed to get prediction from ML service",
       error: err.message,
+      cause: err.cause ? String(err.cause) : null,
     });
   }
 }
