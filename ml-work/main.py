@@ -15,7 +15,7 @@ with MODEL_PATH.open("rb") as fh:
     model = pickle.load(fh)
 
 classes = model.classes_
-DROPOUT_INDEX = int(np.where(classes == 1)[0][0]) if 1 in classes else 1 if len(classes) > 1 else 0
+DROPOUT_INDEX = 1
 
 
 class StudentFeatures(BaseModel):
