@@ -62,6 +62,22 @@ export async function predictRisk(req, res) {
 
   const feeStatus = student.feeStatus === "paid" ? "no" : "yes";
 
+  const hasMarks = student.marks !== null && student.marks !== undefined;
+  const hasAttendance = attendanceRecords.length > 0 && attendancePct !== null;
+  const hasHomeworkData = homeworkCompletion !== null;
+
+  if (!hasMarks || !hasAttendance || !hasHomeworkData) {
+    return res.status(400).json({
+      message:
+        "Not enough student history for prediction. Please record attendance, marks, and assignment activity before running the model.",
+      details: {
+        attendanceCount: attendanceRecords.length,
+        marksRecorded: hasMarks,
+        homeworkRecorded: hasHomeworkData,
+      },
+    });
+  }
+
   const payload = {
     student_id: student._id.toString(),
     gender: student.gender,

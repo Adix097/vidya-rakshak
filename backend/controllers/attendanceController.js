@@ -30,12 +30,20 @@ export async function markAttendance(req, res) {
 }
 
 export async function getAttendance(req, res) {
-  const { classId, date } = req.query;
+  const { classId, date, studentId } = req.query;
   const targetDate = date || getTodayString();
 
-  const filter = { schoolId: req.user.schoolId, date: targetDate };
-  if (classId) filter.classId = classId;
+  const filter = { schoolId: req.user.schoolId };
 
-  const records = await Attendance.find(filter);
+  if (classId) filter.classId = classId;
+  if (studentId) filter.studentId = studentId;
+
+  if (!studentId && !date) {
+    filter.date = targetDate;
+  } else if (date) {
+    filter.date = date;
+  }
+
+  const records = await Attendance.find(filter).sort({ date: -1 });
   res.json(records);
 }
