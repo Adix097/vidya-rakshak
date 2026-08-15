@@ -31,29 +31,19 @@ export default function StudentRisk() {
       .catch((err) => setError(err.message));
   }, [selectedClass]);
 
-  useEffect(() => {
-    students.forEach((s) => {
-      if (s.riskScore !== undefined && s.riskScore !== null) {
-        console.log(`${s.name} - ${s.riskScore}`);
-      }
-    });
-  }, [students]);
-
   const handlePredict = async (studentId) => {
     setError("");
     setPredicting((prev) => ({ ...prev, [studentId]: true }));
     try {
       const result = await api.post(`/api/students/${studentId}/predict`, {});
+      const student = students.find((s) => s._id === studentId);
+      console.log(`${student?.name || studentId} - ${result.risk_score}`);
       setStudents((prev) =>
         prev.map((s) =>
           s._id === studentId
-            ? {
-              ...s,
-              riskLevel: result.risk_level,
-              riskScore: result.risk_score,
-            }
-            : s,
-        ),
+            ? { ...s, riskLevel: result.risk_level, riskScore: result.risk_score }
+            : s
+        )
       );
     } catch (err) {
       setError(err.message);
