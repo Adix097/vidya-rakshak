@@ -9,6 +9,7 @@ import Marks from "./pages/teacher/Marks";
 import StudentRisk from "./pages/teacher/StudentRisk";
 import FeeStatus from "./pages/fee-coordinator/FeeStatus";
 import Layout from "./Components/layout/Layout";
+import AttendanceHistory from "./pages/teacher/AttendanceHistory";
 
 export default function AppRoutes() {
   return (
@@ -62,6 +63,16 @@ export default function AppRoutes() {
           <ProtectedRoute allowedRoles={["teacher"]}>
             <Layout>
               <StudentRisk />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/attendance-history"
+        element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <Layout>
+              <AttendanceHistory />
             </Layout>
           </ProtectedRoute>
         }

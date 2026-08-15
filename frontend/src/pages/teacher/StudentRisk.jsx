@@ -10,6 +10,8 @@ export default function StudentRisk() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
   useEffect(() => {
     api
       .get("/api/classes")
@@ -38,10 +40,10 @@ export default function StudentRisk() {
         prev.map((s) =>
           s._id === studentId
             ? {
-                ...s,
-                riskLevel: result.risk_level,
-                riskScore: result.risk_score,
-              }
+              ...s,
+              riskLevel: result.risk_level,
+              riskScore: result.risk_score,
+            }
             : s,
         ),
       );
@@ -56,35 +58,23 @@ export default function StudentRisk() {
     if (!students.length) return;
 
     setError("");
-    const allStudentIds = students.map((student) => student._id);
-
-    for (const studentId of allStudentIds) {
-      if (!predicting[studentId]) {
-        setPredicting((prev) => ({ ...prev, [studentId]: true }));
+    for (const student of students) {
+      setPredicting((prev) => ({ ...prev, [student._id]: true }));
+      try {
+        const result = await api.post(`/api/students/${student._id}/predict`, {});
+        setStudents((prev) =>
+          prev.map((s) =>
+            s._id === student._id
+              ? { ...s, riskLevel: result.risk_level, riskScore: result.risk_score }
+              : s
+          )
+        );
+      } catch (err) {
+        setError(`Failed on ${student.name}: ${err.message}`);
+      } finally {
+        setPredicting((prev) => ({ ...prev, [student._id]: false }));
       }
-    }
-
-    try {
-      await Promise.all(
-        allStudentIds.map(async (studentId) => {
-          const result = await api.post(`/api/students/${studentId}/predict`, {});
-          setStudents((prev) =>
-            prev.map((s) =>
-              s._id === studentId
-                ? {
-                    ...s,
-                    riskLevel: result.risk_level,
-                    riskScore: result.risk_score,
-                  }
-                : s,
-            ),
-          );
-        }),
-      );
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setPredicting({});
+      await sleep(1200); // space out requests to satisfy ML service's rate limit
     }
   };
 

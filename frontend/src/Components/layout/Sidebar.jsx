@@ -10,6 +10,7 @@ const nav_items = {
     { to: "/attendance", label: "Attendance" },
     { to: "/marks", label: "Marks" },
     { to: "/risk", label: "Student Risk" },
+    { to: "/attendance-history", label: "Attendance History"}
   ],
   "fee-coordinator": [{ to: "/fees", label: "Fee Status" }],
 };

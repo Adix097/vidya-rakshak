@@ -39,3 +39,20 @@ export async function getAttendance(req, res) {
   const records = await Attendance.find(filter);
   res.json(records);
 }
+
+export async function getAttendanceHistory(req, res) {
+  const { classId, days = 14 } = req.query;
+  if (!classId) return res.status(400).json({ message: "classId is required" });
+
+  const since = new Date();
+  since.setDate(since.getDate() - Number(days));
+  const sinceStr = since.toISOString().split("T")[0];
+
+  const records = await Attendance.find({
+    classId,
+    schoolId: req.user.schoolId,
+    date: { $gte: sinceStr },
+  }).sort({ date: 1 });
+
+  res.json(records);
+}

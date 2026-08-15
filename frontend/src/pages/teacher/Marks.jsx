@@ -9,6 +9,8 @@ export default function Marks() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   useEffect(() => {
     api
@@ -51,12 +53,10 @@ export default function Marks() {
   const handleSave = async () => {
     setError("");
     try {
-      // one PATCH per changed student
-      await Promise.all(
-        students.map((s) =>
-          api.patch(`/api/students/${s._id}/marks`, { marks: marks[s._id] }),
-        ),
-      );
+      for (const s of students) {
+        await api.patch(`/api/students/${s._id}/marks`, { marks: marks[s._id] });
+        await sleep(300);
+      }
       setSaved(true);
     } catch (err) {
       setError(err.message);
