@@ -3,7 +3,8 @@ import {
   createStudent,
   getStudents,
   updateMarks,
-  updateFeeStatus,
+  updateTuitionFeeStatus,
+  updateTransportationFeeStatus,
   getRiskOverview,
 } from "../controllers/studentController.js";
 import { getStudentFeatures } from "../controllers/featuresController.js";
@@ -15,10 +16,16 @@ router.post("/", requireAuth, requireRole("fee-coordinator"), createStudent);
 router.get("/", requireAuth, getStudents);
 router.patch("/:id/marks", requireAuth, requireRole("teacher"), updateMarks);
 router.patch(
-  "/:id/fee-status",
+  "/:id/tution-fee-status",
   requireAuth,
   requireRole("fee-coordinator"),
-  updateFeeStatus,
+  updateTuitionFeeStatus,
+);
+router.patch(
+  "/:id/transportation-fee-status",
+  requireAuth,
+  requireRole("fee-coordinator"),
+  updateTransportationFeeStatus,
 );
 router.get('/overview', requireAuth, requireRole('school-admin'), getRiskOverview);
 router.get("/:id/features", requireAuth, getStudentFeatures);

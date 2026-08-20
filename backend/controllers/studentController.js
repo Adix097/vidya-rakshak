@@ -1,18 +1,23 @@
 import Student from "../models/student.js";
 import Class from "../models/class.js";
 import School from "../models/school.js";
-import { geocodeAddress, calculateDistanceKm } from "../utils/distance.js";
+import { geocodeAddress, calculateDistanceMeters } from "../utils/distance.js";
 
 export async function createStudent(req, res) {
   const {
     name,
-    age,
     gender,
+    age,
     rollNumber,
     classId,
     address,
-    feeAmount,
-    feeStatus,
+    tuitionFeeAmount,
+    tuitionFeeStatus,
+    transportationFeeAmount,
+    transportationFeeStatus,
+    hasScholarship,
+    hasTransportation,
+    parentPhone,
   } = req.body;
 
   if (
@@ -22,47 +27,35 @@ export async function createStudent(req, res) {
     !classId ||
     !address ||
     age == null ||
-    feeAmount == null
+    tuitionFeeAmount == null ||
+    !parentPhone
   ) {
     return res.status(400).json({
       message:
-        "name, gender, rollNumber, classId, age, address, and feeAmount are required",
+        "name, gender, rollNumber, classId, age, address, tuitionFeeAmount, and parentPhone are required",
     });
   }
 
-  if (!["male", "female", "other"].includes(gender)) {
-    return res
-      .status(400)
-      .json({ message: "gender must be male, female, or other" });
+  if (!["male", "female"].includes(gender)) {
+    return res.status(400).json({ message: "gender must be male or female" });
   }
 
-  if (typeof age !== "number" || age < 3 || age > 100) {
-    return res.status(400).json({
-      message: "age must be between 3 and 100",
-    });
+  if (typeof age !== "number" || age < 3) {
+    return res.status(400).json({ message: "age must be a number, at least 3" });
   }
 
-  // confirm the class actually exists and belongs to this coordinator's school
-  const classDoc = await Class.findOne({
-    _id: classId,
-    schoolId: req.user.schoolId,
-  });
+  const classDoc = await Class.findOne({ _id: classId, schoolId: req.user.schoolId });
   if (!classDoc) {
     return res.status(404).json({ message: "Class not found" });
   }
 
   try {
-    let distanceToSchool = null;
+    let distanceMeters = 0;
     const coords = await geocodeAddress(address);
     if (coords) {
       const school = await School.findById(req.user.schoolId);
       if (school) {
-        distanceToSchool = calculateDistanceKm(
-          school.lat,
-          school.lng,
-          coords.lat,
-          coords.lng,
-        );
+        distanceMeters = calculateDistanceMeters(school.lat, school.lng, coords.lat, coords.lng);
       }
     }
 
@@ -73,88 +66,110 @@ export async function createStudent(req, res) {
       rollNumber,
       classId,
       address,
-      feeAmount,
-      feeStatus: feeStatus || "pending",
+      distanceMeters,
+      tuitionFeeAmount,
+      tuitionFeeStatus: tuitionFeeStatus || "unpaid",
+      transportationFeeAmount: transportationFeeAmount || 0,
+      transportationFeeStatus: transportationFeeStatus || "unpaid",
+      hasScholarship: !!hasScholarship,
+      hasTransportation: !!hasTransportation,
+      parentPhone,
       schoolId: req.user.schoolId,
-      distanceToSchool,
     });
 
     res.status(201).json(student);
   } catch (err) {
     if (err.code === 11000) {
       return res.status(409).json({
-        message:
-          "A student with this roll number already exists in this school",
+        message: "A student with this roll number already exists in this school",
       });
     }
-    res
-      .status(500)
-      .json({ message: "Failed to create student", error: err.message });
+    res.status(500).json({ message: "Failed to create student", error: err.message });
   }
 }
 
 export async function getStudents(req, res) {
   const { classId } = req.query;
-
   const filter = { schoolId: req.user.schoolId };
-  if (classId) {
-    filter.classId = classId;
-  }
+  if (classId) filter.classId = classId;
 
   const students = await Student.find(filter).populate("classId", "name");
   res.json(students);
+}
+
+export async function updateStudent(req, res) {
+  const allowed = ["name", "classId", "parentPhone", "age", "gender"];
+  const updates = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+
+  if (updates.gender && !["male", "female"].includes(updates.gender)) {
+    return res.status(400).json({ message: "gender must be male or female" });
+  }
+
+  const student = await Student.findOneAndUpdate(
+    { _id: req.params.id, schoolId: req.user.schoolId },
+    updates,
+    { new: true }
+  );
+
+  if (!student) return res.status(404).json({ message: "Student not found" });
+  res.json(student);
 }
 
 export async function updateMarks(req, res) {
   const { id } = req.params;
   const { marks } = req.body;
 
-  if (
-    marks !== null &&
-    (typeof marks !== "number" || marks < 0 || marks > 100)
-  ) {
-    return res.status(400).json({ message: "out of range" });
+  if (typeof marks !== "number" || marks < 0 || marks > 100) {
+    return res.status(400).json({ message: "marks must be a number between 0 and 100" });
   }
 
   const student = await Student.findOneAndUpdate(
     { _id: id, schoolId: req.user.schoolId },
     { marks },
-    { new: true },
+    { new: true }
   );
 
-  if (!student) {
-    return res.status(404).json({ message: "Student not found" });
-  }
-
+  if (!student) return res.status(404).json({ message: "Student not found" });
   res.json(student);
 }
 
-export async function updateFeeStatus(req, res) {
-  const { id } = req.params;
-  const { feeStatus } = req.body;
-
-  if (!["paid", "pending", "overdue"].includes(feeStatus)) {
-    return res
-      .status(400)
-      .json({ message: "Must be paid, pending, or overdue" });
+export async function updateTuitionFeeStatus(req, res) {
+  const { tuitionFeeStatus } = req.body;
+  if (!["paid", "unpaid"].includes(tuitionFeeStatus)) {
+    return res.status(400).json({ message: "must be paid or unpaid" });
   }
 
   const student = await Student.findOneAndUpdate(
-    { _id: id, schoolId: req.user.schoolId },
-    { feeStatus },
-    { new: true },
+    { _id: req.params.id, schoolId: req.user.schoolId },
+    { tuitionFeeStatus },
+    { new: true }
   );
 
-  if (!student) {
-    return res.status(404).json({ message: "Student not found" });
+  if (!student) return res.status(404).json({ message: "Student not found" });
+  res.json(student);
+}
+
+export async function updateTransportationFeeStatus(req, res) {
+  const { transportationFeeStatus } = req.body;
+  if (!["paid", "unpaid"].includes(transportationFeeStatus)) {
+    return res.status(400).json({ message: "must be paid or unpaid" });
   }
 
+  const student = await Student.findOneAndUpdate(
+    { _id: req.params.id, schoolId: req.user.schoolId },
+    { transportationFeeStatus },
+    { new: true }
+  );
+
+  if (!student) return res.status(404).json({ message: "Student not found" });
   res.json(student);
 }
 
 export async function getRiskOverview(req, res) {
   const students = await Student.find({ schoolId: req.user.schoolId });
-
   const totalStudents = students.length;
   const riskCounts = { low: 0, medium: 0, high: 0, critical: 0 };
 

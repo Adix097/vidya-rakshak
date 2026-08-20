@@ -63,88 +63,58 @@ export async function predictRisk(req, res) {
   const feeStatus = student.feeStatus === "paid" ? "no" : "yes";
 
   const payload = {
-    student_id: student._id.toString(),
-    gender: student.gender,
+    gender: student.gender === "female" ? 1 : 0, // female=1, male=0
     age: student.age,
-    attendance_pct: attendancePct,
-    marks: student.marks,
-    homework_completion: homeworkCompletion,
-    distance_to_school: student.distanceToSchool,
-    fee_status: feeStatus,
+    attendance_pct: attendancePct ?? 0,
+    marks: student.marks ?? 0,
+    homework_completion_pct: homeworkPct ?? 0,
+    distance_to_school: student.distanceMeters,
+    Tution_fee_status: student.tuitionFeeStatus === "paid" ? 1 : 0, // paid=1, unpaid=0
+    Transportation_fee_status: student.transportationFeeStatus === "paid" ? 1 : 0,
+    has_schlorship: student.hasScholarship ? 1 : 0,
+    has_transportation: student.hasTransportation ? 1 : 0,
   };
+
+  // ... inside the try block, replace the old response handling:
+  const result = await response.json(); // { prediction, score, threshold, explanation }
+
+  const riskScore = result.score;
+  const riskLevel =
+    riskScore < 0.4 ? "low" :
+      riskScore < 0.6 ? "medium" :
+        riskScore < 0.8 ? "high" : "critical";
+
+  student.riskLevel = riskLevel;
+  student.riskScore = riskScore;
+  student.riskExplanation = result.explanation; // [{ feature, impact }, ...] top 5
+  await student.save();
+
+  res.json({
+    risk_level: riskLevel,
+    risk_score: riskScore,
+    explanation: result.explanation,
+  });
 
   try {
     let response;
+    const result = await response.json();
 
-    try {
-      response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } catch (err) {
-      if (err.message.includes("timed out")) {
-        console.warn(
-          "ML service request timed out on first attempt, retrying after delay",
-          err,
-        );
-        await sleep(ML_RETRY_DELAY_MS);
+    const riskScore = result.score;
+    const riskLevel =
+      riskScore < 0.4 ? "low" :
+        riskScore < 0.6 ? "medium" :
+          riskScore < 0.8 ? "high" : "critical";
 
-        try {
-          response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-        } catch (retryErr) {
-          console.error("Prediction request failed after retry", retryErr);
-          return res.status(504).json({
-            message: "ML service is waking up. Please try again in a moment.",
-            error: retryErr.message,
-          });
-        }
-      } else {
-        console.error("Prediction request failed", err);
-        return res.status(502).json({
-          message: "Failed to get prediction from ML service.",
-          error: err.message,
-          cause: err.cause ? String(err.cause) : null,
-        });
-      }
-    }
-
-    if (response.status === 429) {
-      console.warn("ML service rate-limited (429), retrying after delay");
-      await sleep(ML_RETRY_DELAY_MS);
-      response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    }
-
-    if (!response.ok) {
-      const body = await response.text();
-      console.error(
-        `ML service responded with status ${response.status}: ${body}`,
-      );
-      return res.status(502).json({
-        message:
-          response.status === 429
-            ? "ML service is temporarily busy. Please wait a few seconds and try again."
-            : "ML service returned an error.",
-        error: `ML service responded with ${response.status}`,
-      });
-    }
-
-    const prediction = await response.json();
-
-    // save the result on the student
-    student.riskLevel = prediction.risk_level;
-    student.riskScore = prediction.risk_score;
+    student.riskLevel = riskLevel;
+    student.riskScore = riskScore;
+    student.riskExplanation = result.explanation;
     await student.save();
 
-    res.json(prediction);
+    res.json({
+      risk_level: riskLevel,
+      risk_score: riskScore,
+      explanation: result.explanation,
+    });
   } catch (err) {
     console.error("Prediction endpoint error", err, "cause:", err.cause);
     res.status(502).json({

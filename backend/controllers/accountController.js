@@ -5,14 +5,10 @@ export async function createAccount(req, res) {
   const { name, email, password, role } = req.body;
 
   if (!name || !email || !password || !role) {
-    return res
-      .status(400)
-      .json({ message: "name, email, password, and role are required" });
+    return res.status(400).json({ message: "name, email, password, and role are required" });
   }
   if (!["teacher", "fee-coordinator"].includes(role)) {
-    return res
-      .status(400)
-      .json({ message: "role must be teacher or fee-coordinator" });
+    return res.status(400).json({ message: "role must be teacher or fee-coordinator" });
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -33,13 +29,9 @@ export async function createAccount(req, res) {
     });
   } catch (err) {
     if (err.code === 11000) {
-      return res
-        .status(409)
-        .json({ message: "An account with this email already exists" });
+      return res.status(409).json({ message: "An account with this email already exists" });
     }
-    res
-      .status(500)
-      .json({ message: "Failed to create account", error: err.message });
+    res.status(500).json({ message: "Failed to create account", error: err.message });
   }
 }
 
@@ -49,4 +41,32 @@ export async function getAccounts(req, res) {
     role: { $in: ["teacher", "fee-coordinator"] },
   }).select("-passwordHash");
   res.json(accounts);
+}
+
+export async function updateAccount(req, res) {
+  const { name, email } = req.body;
+
+  const updates = {};
+  if (name) updates.name = name;
+  if (email) updates.email = email.toLowerCase();
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ message: "Nothing to update" });
+  }
+
+  try {
+    const account = await Account.findOneAndUpdate(
+      { _id: req.params.id, schoolId: req.user.schoolId },
+      updates,
+      { new: true }
+    ).select("-passwordHash");
+
+    if (!account) return res.status(404).json({ message: "Account not found" });
+    res.json(account);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "An account with this email already exists" });
+    }
+    res.status(500).json({ message: "Failed to update account", error: err.message });
+  }
 }
