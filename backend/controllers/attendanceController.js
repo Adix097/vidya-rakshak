@@ -5,7 +5,7 @@ function getTodayString() {
 }
 
 export async function markAttendance(req, res) {
-  const { records } = req.body; // [{ studentId, status }, ...]
+  const { records } = req.body; // [{ studentId, classId, status }, ...]
 
   if (!Array.isArray(records) || records.length === 0) {
     return res.status(400).json({ message: "records array is required" });
@@ -15,13 +15,35 @@ export async function markAttendance(req, res) {
   const results = [];
 
   for (const { studentId, classId, status } of records) {
-    if (!studentId || !classId || !["present", "absent"].includes(status))
-      continue;
+    if (!studentId || !classId || !["present", "absent", "holiday"].includes(status)) continue;
 
     const record = await Attendance.findOneAndUpdate(
       { studentId, date: today },
       { studentId, classId, date: today, status, schoolId: req.user.schoolId },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
+    );
+    results.push(record);
+  }
+
+  res.json(results);
+}
+
+// marks the WHOLE class as holiday in one call
+export async function markHoliday(req, res) {
+  const { classId, studentIds } = req.body;
+
+  if (!classId || !Array.isArray(studentIds) || studentIds.length === 0) {
+    return res.status(400).json({ message: "classId and studentIds array are required" });
+  }
+
+  const today = getTodayString();
+  const results = [];
+
+  for (const studentId of studentIds) {
+    const record = await Attendance.findOneAndUpdate(
+      { studentId, date: today },
+      { studentId, classId, date: today, status: "holiday", schoolId: req.user.schoolId },
+      { upsert: true, new: true }
     );
     results.push(record);
   }
