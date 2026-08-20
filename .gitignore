@@ -1,6 +1,7 @@
 node_modules/
 venv/
 __pycache__/
+student_prediction_model.pkl
 *.pyc
 .env
 .DS_Store
