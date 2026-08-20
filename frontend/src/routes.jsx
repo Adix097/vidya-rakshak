@@ -6,10 +6,10 @@ import Overview from "./pages/school-admin/Overview";
 import ManageAccounts from "./pages/school-admin/ManageAccounts";
 import Attendance from "./pages/teacher/Attendance";
 import Marks from "./pages/teacher/Marks";
+import Homework from "./pages/teacher/Homework";
 import StudentRisk from "./pages/teacher/StudentRisk";
 import FeeStatus from "./pages/fee-coordinator/FeeStatus";
 import Layout from "./Components/layout/Layout";
-import AttendanceHistory from "./pages/teacher/AttendanceHistory";
 
 export default function AppRoutes() {
   return (
@@ -58,21 +58,21 @@ export default function AppRoutes() {
         }
       />
       <Route
-        path="/risk"
+        path="/homework"
         element={
           <ProtectedRoute allowedRoles={["teacher"]}>
             <Layout>
-              <StudentRisk />
+              <Homework />
             </Layout>
           </ProtectedRoute>
         }
       />
       <Route
-        path="/attendance-history"
+        path="/risk"
         element={
           <ProtectedRoute allowedRoles={["teacher"]}>
             <Layout>
-              <AttendanceHistory />
+              <StudentRisk />
             </Layout>
           </ProtectedRoute>
         }
