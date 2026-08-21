@@ -9,6 +9,7 @@ const nav_items = {
   teacher: [
     { to: "/attendance", label: "Attendance" },
     { to: "/marks", label: "Marks" },
+    { to: "/homework", label: "Homework" },
     { to: "/risk", label: "Student Risk" },
     { to: "/attendance-history", label: "Attendance History"}
   ],

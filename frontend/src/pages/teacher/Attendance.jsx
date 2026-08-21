@@ -7,6 +7,7 @@ export default function Attendance() {
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState({});
   const [saved, setSaved] = useState(false);
+  const [holidaySaved, setHolidaySaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -16,10 +17,8 @@ export default function Attendance() {
     year: "numeric",
   });
 
-  // load this teacher's classes on mount
   useEffect(() => {
-    api
-      .get("/api/classes")
+    api.get("/api/classes")
       .then((data) => {
         setClasses(data);
         if (data.length > 0) setSelectedClass(data[0]._id);
@@ -28,17 +27,14 @@ export default function Attendance() {
       .finally(() => setLoading(false));
   }, []);
 
-  // load students whenever selected class changes
-  //! random default values of attendance
   useEffect(() => {
     if (!selectedClass) return;
-    api
-      .get(`/api/students?classId=${selectedClass}`)
+    api.get(`/api/students?classId=${selectedClass}`)
       .then((data) => {
         setStudents(data);
         const initial = {};
         data.forEach((s) => {
-          initial[s._id] = Math.random() < 0.8 ? "present" : "absent"; // ~80% present, realistic default
+          initial[s._id] = Math.random() < 0.8 ? "present" : "absent";
         });
         setRecords(initial);
       })
@@ -48,6 +44,7 @@ export default function Attendance() {
   const setStatus = (studentId, status) => {
     setRecords((prev) => ({ ...prev, [studentId]: status }));
     setSaved(false);
+    setHolidaySaved(false);
   };
 
   const handleSave = async () => {
@@ -67,16 +64,41 @@ export default function Attendance() {
     }
   };
 
+  const handleMarkHoliday = async () => {
+    setError("");
+    try {
+      await api.post("/api/attendance/holiday", {
+        classId: selectedClass,
+        studentIds: students.map((s) => s._id),
+      });
+      setHolidaySaved(true);
+      setSaved(false);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-1">Attendance</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        {today} — editable for today only
-      </p>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-2xl font-semibold text-gray-800">Attendance</h1>
+        <button
+          onClick={handleMarkHoliday}
+          className="text-xs px-3 py-1.5 border border-amber-300 rounded bg-amber-50 text-amber-700 hover:bg-amber-100"
+        >
+          Mark Today as Holiday
+        </button>
+      </div>
+      <p className="text-sm text-gray-500 mb-6">{today} — editable for today only</p>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+      {holidaySaved && (
+        <p className="text-sm text-amber-700 mb-4">
+          Today marked as a holiday for this class — attendance won't count toward any student's percentage.
+        </p>
+      )}
 
       <div className="mb-6">
         <label className="text-sm text-gray-600 mr-2">Class</label>
@@ -85,13 +107,12 @@ export default function Attendance() {
           onChange={(e) => {
             setSelectedClass(e.target.value);
             setSaved(false);
+            setHolidaySaved(false);
           }}
           className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
         >
           {classes.map((c) => (
-            <option key={c._id} value={c._id}>
-              {c.name}
-            </option>
+            <option key={c._id} value={c._id}>{c.name}</option>
           ))}
         </select>
       </div>
@@ -100,17 +121,14 @@ export default function Attendance() {
         {students.map((student) => {
           const status = records[student._id] || null;
           return (
-            <div
-              key={student._id}
-              className="flex items-center justify-between px-4 py-3"
-            >
+            <div key={student._id} className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-gray-800">{student.name}</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setStatus(student._id, "present")}
                   className={`px-3 py-1 text-xs rounded border ${status === "present"
-                    ? "bg-green-50 border-green-300 text-green-700"
-                    : "border-gray-300 text-gray-500 hover:bg-gray-50"
+                      ? "bg-green-50 border-green-300 text-green-700"
+                      : "border-gray-300 text-gray-500 hover:bg-gray-50"
                     }`}
                 >
                   Present
@@ -118,8 +136,8 @@ export default function Attendance() {
                 <button
                   onClick={() => setStatus(student._id, "absent")}
                   className={`px-3 py-1 text-xs rounded border ${status === "absent"
-                    ? "bg-red-50 border-red-300 text-red-700"
-                    : "border-gray-300 text-gray-500 hover:bg-gray-50"
+                      ? "bg-red-50 border-red-300 text-red-700"
+                      : "border-gray-300 text-gray-500 hover:bg-gray-50"
                     }`}
                 >
                   Absent
