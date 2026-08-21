@@ -1,6 +1,29 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 
+const FEATURE_LABELS = {
+  distance_to_school: "Distance from school",
+  attendance_pct: "Attendance",
+  homework_completion_pct: "Homework completion",
+  Tution_fee_status: "Tuition fee status",
+  Transportation_fee_status: "Transportation fee status",
+  marks: "Marks",
+  age: "Age",
+  gender: "Gender",
+  has_schlorship: "Scholarship",
+  has_transportation: "Transportation use",
+};
+
+function formatRiskFactor(feature) {
+  const key = feature.replace(/^(num|cat)__/, "");
+  return FEATURE_LABELS[key] || key.replaceAll("_", " ");
+}
+
+function getImpactDescription(impact) {
+  const strength = Math.abs(impact) >= 1 ? "Strongly" : Math.abs(impact) >= 0.5 ? "Moderately" : "Slightly";
+  return `${strength} ${impact >= 0 ? "increases" : "reduces"} dropout risk`;
+}
+
 function TrendChart({ title, points, max, suffix = "" }) {
   const width = 560;
   const height = 180;
@@ -112,12 +135,22 @@ export default function StudentSummary() {
 
           <section className="bg-white border border-gray-200 rounded p-4">
             <h2 className="text-sm font-semibold text-gray-800 mb-3">Latest risk analysis</h2>
+            <p className="text-xs text-gray-500 mb-3">
+              These factors show which student signals pushed the model&apos;s risk estimate up or down. They are not percentages.
+            </p>
             {explanations.length ? (
               <div className="divide-y divide-gray-100">
                 {explanations.map((item, index) => (
-                  <div key={`${item.feature}-${index}`} className="flex items-center justify-between py-2 text-sm">
-                    <span className="text-gray-700">{item.feature}</span>
-                    <span className={item.impact >= 0 ? "text-red-600" : "text-green-600"}>{item.impact}</span>
+                  <div key={`${item.feature}-${index}`} className="flex items-center justify-between gap-4 py-2 text-sm">
+                    <div>
+                      <div className="text-gray-700">{formatRiskFactor(item.feature)}</div>
+                      <div className={item.impact >= 0 ? "text-red-600 text-xs" : "text-green-600 text-xs"}>
+                        {getImpactDescription(item.impact)}
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                      strength {Math.abs(item.impact).toFixed(2)}
+                    </span>
                   </div>
                 ))}
               </div>

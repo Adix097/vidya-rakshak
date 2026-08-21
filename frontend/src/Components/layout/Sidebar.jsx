@@ -12,7 +12,6 @@ const nav_items = {
     { to: "/homework", label: "Homework" },
     { to: "/risk", label: "Student Risk" },
     { to: "/student-summary", label: "Student Summary" },
-    { to: "/attendance-history", label: "Attendance History"}
   ],
   "fee-coordinator": [{ to: "/fees", label: "Fee Status" }],
 };
