@@ -1,6 +1,8 @@
 import Student from "../models/student.js";
 import Class from "../models/class.js";
 import School from "../models/school.js";
+import Attendance from "../models/attendance.js";
+import StudentHistory from "../models/studentHistory.js";
 import { geocodeAddress, calculateDistanceMeters } from "../utils/distance.js";
 
 export async function createStudent(req, res) {
@@ -133,7 +135,66 @@ export async function updateMarks(req, res) {
   );
 
   if (!student) return res.status(404).json({ message: "Student not found" });
+  await StudentHistory.create({
+    studentId: student._id,
+    schoolId: req.user.schoolId,
+    type: "marks",
+    value: marks,
+  });
   res.json(student);
+}
+
+export async function getStudentSummary(req, res) {
+  const student = await Student.findOne({
+    _id: req.params.id,
+    schoolId: req.user.schoolId,
+  }).populate("classId", "name");
+
+  if (!student) return res.status(404).json({ message: "Student not found" });
+
+  const [attendance, history] = await Promise.all([
+    Attendance.find({
+      studentId: student._id,
+      schoolId: req.user.schoolId,
+      status: { $in: ["present", "absent"] },
+    }).sort({ date: 1 }),
+    StudentHistory.find({ studentId: student._id, schoolId: req.user.schoolId }).sort({ createdAt: 1 }),
+  ]);
+
+  const attendanceTrend = attendance.map((record, index, records) => {
+    const counted = records.slice(0, index + 1);
+    const present = counted.filter((item) => item.status === "present").length;
+    return {
+      date: record.date,
+      percentage: Math.round((present / counted.length) * 1000) / 10,
+    };
+  });
+
+  const marksHistory = history
+    .filter((item) => item.type === "marks")
+    .map((item) => ({ date: item.createdAt, value: item.value }));
+  const riskHistory = history
+    .filter((item) => item.type === "risk")
+    .map((item) => ({
+      date: item.createdAt,
+      score: item.value,
+      level: item.riskLevel,
+      explanation: item.explanation,
+    }));
+
+  if (!marksHistory.length && student.marks != null) {
+    marksHistory.push({ date: student.updatedAt, value: student.marks });
+  }
+  if (!riskHistory.length && student.riskScore != null) {
+    riskHistory.push({
+      date: student.updatedAt,
+      score: student.riskScore,
+      level: student.riskLevel,
+      explanation: student.riskExplanation,
+    });
+  }
+
+  res.json({ student, attendance: attendanceTrend, marks: marksHistory, risk: riskHistory });
 }
 
 export async function updateTuitionFeeStatus(req, res) {

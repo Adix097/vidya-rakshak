@@ -7,6 +7,7 @@ import {
   updateTuitionFeeStatus,
   updateTransportationFeeStatus,
   getRiskOverview,
+  getStudentSummary,
 } from "../controllers/studentController.js";
 import { predictRisk } from "../controllers/predictionController.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
@@ -16,6 +17,7 @@ const router = express.Router();
 // static routes MUST come before any "/:id" routes,
 // otherwise Express will treat "overview" as if it were an :id
 router.get("/overview", requireAuth, requireRole("school-admin"), getRiskOverview);
+router.get("/:id/summary", requireAuth, requireRole("teacher"), getStudentSummary);
 
 router.post("/", requireAuth, requireRole("fee-coordinator"), createStudent);
 router.get("/", requireAuth, getStudents);

@@ -8,6 +8,7 @@ import Attendance from "./pages/teacher/Attendance";
 import Marks from "./pages/teacher/Marks";
 import Homework from "./pages/teacher/Homework";
 import StudentRisk from "./pages/teacher/StudentRisk";
+import StudentSummary from "./pages/teacher/StudentSummary";
 import FeeStatus from "./pages/fee-coordinator/FeeStatus";
 import Layout from "./Components/layout/Layout";
 
@@ -73,6 +74,16 @@ export default function AppRoutes() {
           <ProtectedRoute allowedRoles={["teacher"]}>
             <Layout>
               <StudentRisk />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student-summary"
+        element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <Layout>
+              <StudentSummary />
             </Layout>
           </ProtectedRoute>
         }

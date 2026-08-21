@@ -2,6 +2,7 @@ import Student from "../models/student.js";
 import Attendance from "../models/attendance.js";
 import Assignment from "../models/assignment.js";
 import Submission from "../models/submission.js";
+import StudentHistory from "../models/studentHistory.js";
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 const ML_FETCH_TIMEOUT_MS = 20000;
@@ -113,6 +114,14 @@ export async function predictRisk(req, res) {
     student.riskScore = riskScore;
     student.riskExplanation = result.explanation;
     await student.save();
+    await StudentHistory.create({
+      studentId: student._id,
+      schoolId: req.user.schoolId,
+      type: "risk",
+      value: riskScore,
+      riskLevel,
+      explanation: result.explanation,
+    });
 
     res.json({
       risk_level: riskLevel,
