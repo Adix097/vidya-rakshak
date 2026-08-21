@@ -203,10 +203,6 @@ export default function FeeStatus() {
             {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
         </div>
-        <button type="button" onClick={() => loadClasses().catch((err) => setError(err.message))}
-          className="text-xs px-3 py-1.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">
-          Refresh Classes
-        </button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded divide-y divide-gray-100">
