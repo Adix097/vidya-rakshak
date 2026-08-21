@@ -34,8 +34,6 @@ export default function StudentRisk() {
     setPredicting((prev) => ({ ...prev, [studentId]: true }));
     try {
       const result = await api.post(`/api/students/${studentId}/predict`, {});
-      const student = students.find((s) => s._id === studentId);
-      console.log(`${student?.name || studentId} - ${result.risk_score}`);
       setStudents((prev) =>
         prev.map((s) =>
           s._id === studentId
@@ -50,15 +48,10 @@ export default function StudentRisk() {
     }
   };
 
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const PREDICT_DELAY_MS = 0;
-
   const handlePredictAll = async () => {
     if (!students.length) return;
 
     setError("");
-    const results = [];
-
     for (const student of students) {
       setPredicting((prev) => ({ ...prev, [student._id]: true }));
       try {
@@ -70,19 +63,13 @@ export default function StudentRisk() {
               : s
           )
         );
-        results.push(`${student.name} - ${result.risk_score}`);
       } catch (err) {
-        results.push(`${student.name} - FAILED (${err.message})`);
         setError(`Failed on ${student.name}: ${err.message}`);
       } finally {
         setPredicting((prev) => ({ ...prev, [student._id]: false }));
       }
-      if (PREDICT_DELAY_MS > 0) await sleep(PREDICT_DELAY_MS);
     }
 
-    console.log("--- start of the list ---");
-    results.forEach((line) => console.log(line));
-    console.log("--- end of the list ---");
   };
 
   if (loading) return <p className="text-sm text-gray-500">Loading...</p>;

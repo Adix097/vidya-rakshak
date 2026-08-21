@@ -10,8 +10,7 @@ function getStoredAuth() {
 
   try {
     return { token: savedToken, user: JSON.parse(savedUser) };
-  } catch (err) {
-    console.error("AuthContext: failed to parse saved user from localStorage", err);
+  } catch {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     return { token: null, user: null };

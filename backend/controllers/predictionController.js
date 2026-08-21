@@ -7,8 +7,6 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 const ML_FETCH_TIMEOUT_MS = 20000;
 const ML_RETRY_DELAY_MS = 3000;
 
-console.log(`ML service URL: ${ML_SERVICE_URL}`);
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function fetchWithTimeout(url, options = {}) {
@@ -75,7 +73,6 @@ export async function predictRisk(req, res) {
       });
     } catch (err) {
       if (err.message.includes("timed out")) {
-        console.warn("ML service request timed out, retrying after delay");
         await sleep(ML_RETRY_DELAY_MS);
         response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
           method: "POST",
@@ -88,7 +85,6 @@ export async function predictRisk(req, res) {
     }
 
     if (response.status === 429) {
-      console.warn("ML service rate-limited (429), retrying after delay");
       await sleep(ML_RETRY_DELAY_MS);
       response = await fetchWithTimeout(`${ML_SERVICE_URL}/predict`, {
         method: "POST",
@@ -98,8 +94,7 @@ export async function predictRisk(req, res) {
     }
 
     if (!response.ok) {
-      const body = await response.text();
-      console.error(`ML service responded with status ${response.status}: ${body}`);
+      await response.text();
       return res.status(502).json({
         message:
           response.status === 429
@@ -125,7 +120,6 @@ export async function predictRisk(req, res) {
       explanation: result.explanation,
     });
   } catch (err) {
-    console.error("Prediction endpoint error", err, "cause:", err.cause);
     res.status(502).json({
       message: "Failed to get prediction from ML service",
       error: err.message,
