@@ -28,16 +28,24 @@ export default function FeeStatus() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: "", classId: "", parentPhone: "" });
 
+  const loadClasses = () => {
+    return api.get("/api/classes").then((data) => {
+      setClasses(data);
+      setSelectedClass((current) => {
+        if (current && data.some((classItem) => classItem._id === current)) return current;
+        return data[0]?._id || "";
+      });
+      setForm((current) => ({
+        ...current,
+        classId: data.some((classItem) => classItem._id === current.classId)
+          ? current.classId
+          : data[0]?._id || "",
+      }));
+    });
+  };
+
   useEffect(() => {
-    api.get("/api/classes")
-      .then((data) => {
-        setClasses(data);
-        if (data.length > 0) {
-          setSelectedClass(data[0]._id);
-          setForm((f) => ({ ...f, classId: data[0]._id }));
-        }
-      })
-      .catch((err) => setError(err.message));
+    loadClasses().catch((err) => setError(err.message));
   }, []);
 
   const loadStudents = (classId) => {
@@ -187,12 +195,18 @@ export default function FeeStatus() {
         </form>
       )}
 
-      <div className="mb-6">
-        <label className="text-sm text-gray-600 mr-2">Class</label>
-        <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
-          {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-        </select>
+      <div className="mb-6 flex items-center gap-3">
+        <div>
+          <label className="text-sm text-gray-600 mr-2">Class</label>
+          <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
+            {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+          </select>
+        </div>
+        <button type="button" onClick={() => loadClasses().catch((err) => setError(err.message))}
+          className="text-xs px-3 py-1.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">
+          Refresh Classes
+        </button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded divide-y divide-gray-100">
