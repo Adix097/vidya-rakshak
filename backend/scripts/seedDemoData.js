@@ -3,9 +3,9 @@ import mongoose from "mongoose";
 import School from "../models/school.js";
 import Class from "../models/class.js";
 import Student from "../models/student.js";
-import Attendance from "../models/Attendance.js";
-import Assignment from "../models/Assignment.js";
-import Submission from "../models/Submission.js";
+import Attendance from "../models/attendance.js";
+import Assignment from "../models/assignment.js";
+import Submission from "../models/submission.js";
 
 async function seedDemoData() {
   await mongoose.connect(process.env.MONGO_URI);
@@ -182,10 +182,15 @@ async function seedDemoData() {
       rollNumber: s.rollNumber,
       classId: cls._id,
       address: "Demo Address, Delhi",
-      distanceToSchool: s.distanceToSchool,
+      distanceMeters: Math.round(s.distanceToSchool * 1000),
       marks: s.marks,
-      feeAmount: s.feeAmount,
-      feeStatus: s.feeStatus,
+      tuitionFeeAmount: s.feeAmount,
+      tuitionFeeStatus: s.feeStatus === "paid" ? "paid" : "unpaid",
+      transportationFeeAmount: 0,
+      transportationFeeStatus: "unpaid",
+      hasScholarship: false,
+      hasTransportation: false,
+      parentPhone: "0000000000",
       schoolId: school._id,
     });
     students.push({

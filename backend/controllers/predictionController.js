@@ -57,7 +57,7 @@ export async function predictRisk(req, res) {
     attendance_pct: attendancePct,
     marks: student.marks ?? 0,
     homework_completion_pct: homeworkCompletionPct,
-    distance_to_school: student.distanceMeters,
+    distance_to_school: Number.isFinite(student.distanceMeters) ? student.distanceMeters : 0,
     Tution_fee_status: student.tuitionFeeStatus === "paid" ? 1 : 0,
     Transportation_fee_status: student.transportationFeeStatus === "paid" ? 1 : 0,
     has_schlorship: student.hasScholarship ? 1 : 0,
