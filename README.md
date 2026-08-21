@@ -5,7 +5,7 @@ An early-warning system that predicts student dropout risk from attendance, mark
 ## Live Demo
 
 - **App:** https://vidya-rakshak.vercel.app
-- **Backend API:** https://vidya-rakshak-backend.onrender.com
+- **Backend API:** https://vidya-rakshak.onrender.com
 - **ML Service:** https://vidya-rakshak-ml.onrender.com
 
 > Note: the backend and ML service are on Render's free tier, so the **first request after inactivity can take 30–50 seconds** to wake up. If a prediction fails on the first try, wait a few seconds and try again.
