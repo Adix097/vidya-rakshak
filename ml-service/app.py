@@ -3,9 +3,10 @@ from pydantic import BaseModel
 import pandas as pd
 import joblib
 import shap
+from pathlib import Path
 
 # Load model
-MODEL_PATH = "student_prediction_model.pkl"
+MODEL_PATH = Path(__file__).resolve().parent / "student_prediction_model.pkl"
 
 try:
     artifact = joblib.load(MODEL_PATH)

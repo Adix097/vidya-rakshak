@@ -1,36 +1,25 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState } from "react";
+import { API_URL } from "../api/client";
+import { AuthContext } from "./context";
 
-const AuthContext = createContext(null);
+function getStoredAuth() {
+  const savedToken = localStorage.getItem("token");
+  const savedUser = localStorage.getItem("user");
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  if (!savedToken || !savedUser) return { token: null, user: null };
+
+  try {
+    return { token: savedToken, user: JSON.parse(savedUser) };
+  } catch (err) {
+    console.error("AuthContext: failed to parse saved user from localStorage", err);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    return { token: null, user: null };
+  }
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // on first load restore session from localStorage if one exists
-  useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-
-    if (savedToken && savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setToken(savedToken);
-        setUser(parsedUser);
-      } catch (err) {
-        console.error(
-          "AuthContext: failed to parse saved user from localStorage",
-          err,
-        );
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-
-    setLoading(false);
-  }, []);
+  const [{ user, token }, setAuth] = useState(getStoredAuth);
 
   const login = async (email, password) => {
     const res = await fetch(`${API_URL}/api/auth/login`, {
@@ -45,26 +34,20 @@ export function AuthProvider({ children }) {
     }
 
     const data = await res.json();
-    setToken(data.token);
-    setUser(data.user);
+    setAuth({ token: data.token, user: data.user });
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
   };
 
   const logout = () => {
-    setUser(null);
-    setToken(null);
+    setAuth({ token: null, user: null });
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading: false }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }

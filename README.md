@@ -35,3 +35,17 @@ vidya-rakshak/
 └── ml-service/   → FastAPI service (dropout-risk model)
 ```
 
+## Run Locally
+
+Start each service from its own directory:
+
+```text
+ml-service: uvicorn app:app --reload --host 0.0.0.0 --port 8000
+backend:    npm run dev
+frontend:   npm run dev
+```
+
+The backend reads `ML_SERVICE_URL`, `MONGO_URI`, `JWT_SECRET`, and `PORT` from `backend/.env`.
+The frontend reads `VITE_API_URL`; it defaults to `http://localhost:5000` for local development.
+The ML service exposes `GET /health` and `POST /predict`.
+
