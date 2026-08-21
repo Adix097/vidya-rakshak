@@ -34,6 +34,14 @@ export default function StudentRisk() {
     setPredicting((prev) => ({ ...prev, [studentId]: true }));
     try {
       const result = await api.post(`/api/students/${studentId}/predict`, {});
+      const student = students.find((item) => item._id === studentId);
+      console.table([
+        {
+          student: student?.name || studentId,
+          risk_score: result.risk_score,
+          risk_level: result.risk_level,
+        },
+      ]);
       setStudents((prev) =>
         prev.map((s) =>
           s._id === studentId
@@ -52,10 +60,16 @@ export default function StudentRisk() {
     if (!students.length) return;
 
     setError("");
+    const predictionResults = [];
     for (const student of students) {
       setPredicting((prev) => ({ ...prev, [student._id]: true }));
       try {
         const result = await api.post(`/api/students/${student._id}/predict`, {});
+        predictionResults.push({
+          student: student.name,
+          risk_score: result.risk_score,
+          risk_level: result.risk_level,
+        });
         setStudents((prev) =>
           prev.map((s) =>
             s._id === student._id
@@ -70,6 +84,7 @@ export default function StudentRisk() {
       }
     }
 
+    console.table(predictionResults);
   };
 
   if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
