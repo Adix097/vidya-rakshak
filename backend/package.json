@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed": "node scripts/seed.js",
-    "seed:demo": "node scripts/seedDemoData.js"
+    "seed:demo": "node scripts/seedDemoData.js",
+    "db:reset": "node scripts/resetDatabase.js"
   },
   "keywords": [],
   "author": "",

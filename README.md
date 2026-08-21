@@ -48,4 +48,3 @@ frontend:   npm run dev
 The backend reads `ML_SERVICE_URL`, `MONGO_URI`, `JWT_SECRET`, and `PORT` from `backend/.env`.
 The frontend reads `VITE_API_URL`; it defaults to `http://localhost:5000` for local development.
 The ML service exposes `GET /health` and `POST /predict`.
-
