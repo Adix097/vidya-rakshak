@@ -1,16 +1,52 @@
-# React + Vite
+# Vidya Rakshak frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the React dashboard used by school staff. It is a Vite application with Tailwind CSS and React Router.
 
-Currently, two official plugins are available:
+The frontend is deliberately thin: it handles the screens, navigation, login state, and API calls. Student data, authentication decisions, database writes, and ML requests belong to the backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Screens
 
-## React Compiler
+The dashboard has separate areas for each role:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **School admin:** risk overview and staff account management
+- **Teacher:** attendance, marks, homework, student summaries, and risk predictions
+- **Fee coordinator:** student records and fee status
 
-## Expanding the ESLint configuration
+Routes are protected in [`src/routes.jsx`](./src/routes.jsx). The API client is in [`src/api/client.js`](./src/api/client.js).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Local development
+
+```bash
+npm ci
+cp .env.example .env.local
+npm run dev
+```
+
+Set the local backend URL in `.env.local`:
+
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+Vite exposes only variables beginning with `VITE_` to browser code. Never put MongoDB credentials, JWT secrets, or other private values in this directory’s environment files.
+
+## Build and preview
+
+```bash
+npm run lint
+npm run build
+npm run preview
+```
+
+The production build is written to `dist/`.
+
+## Production deployment
+
+The frontend is deployed from this directory on Vercel:
+
+- **Root directory:** `frontend`
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+- **Production variable:** `VITE_API_URL=https://api.vidyarakshak.in`
+
+The value is also recorded in [`.env.production`](./.env.production) for repository-based builds. The Vercel rewrite in [`vercel.json`](./vercel.json) sends client-side routes back to `index.html`, so refreshing a dashboard route continues to work.
