@@ -39,7 +39,7 @@ Fee coordinators can add students and update tuition and transportation fee stat
 
 | Service | URL | Hosting |
 |---|---|---|
-| Frontend | `https://vidya-rakshak.vercel.app` | Vercel |
+| Frontend | `https://vidyarakshak.in` | Vercel |
 | Backend API | `https://api.vidyarakshak.in` | Render |
 | ML API | `https://ml.vidyarakshak.in` | Render |
 | Database | MongoDB Atlas | Managed database |
