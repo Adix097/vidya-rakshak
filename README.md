@@ -6,7 +6,7 @@ An early-warning system that predicts student dropout risk from attendance, mark
 
 | Component | Hosting | Public URL |
 |---|---|---|
-| Frontend | Vercel | `https://vidya-rakshak.vercel.app` (or your Vercel custom domain) |
+| Frontend | Vercel | `https://vidyarakshak.in` |
 | Backend API | Render Web Service | `https://api.vidyarakshak.in` |
 | ML API | Render Web Service | `https://ml.vidyarakshak.in` |
 | Database | MongoDB Atlas | Private connection from the backend |
